@@ -1,38 +1,85 @@
 // Get current page filename
 const currentPage = window.location.pathname.split("/").pop();
 
-// List of restricted pages
+// List of restricted pages (should only be accessible if the profile is complete)
 const restrictedPages = ["profile.html", "dashboard.html"];
 
 // Initialize Firebase Auth and check access immediately on page load
 firebase.auth().onAuthStateChanged((user) => {
-  if (restrictedPages.includes(currentPage) && !user) {
-    alert("You need to log in to access this page.");
-    window.location.href = "signin.html";
+  if (user) {
+    const db = firebase.firestore();
+    const userRef = db.collection("users").doc(user.uid);
+
+    // Check if the user's profile is complete
+    userRef.get().then((docSnapshot) => {
+      if (docSnapshot.exists) {
+        const userData = docSnapshot.data();
+
+        // If the profile is incomplete, redirect them only if they're not on profile-completion.html
+        if (!userData.username && currentPage !== "profile-completion.html") {
+          alert("Please complete your profile.");
+          window.location.href = "profile-completion.html";
+        } else if (restrictedPages.includes(currentPage) && !userData.username) {
+          // Prevent restricted page access if profile is not complete
+          alert("You need to complete your profile before accessing this page.");
+          window.location.href = "profile-completion.html";
+        }
+      } else {
+        // If user data doesn't exist, create a placeholder without a username
+        userRef.set({
+          name: user.displayName || "No Name Provided",
+          email: user.email,
+          username: "", // Placeholder until provided by user
+        }).then(() => {
+          if (currentPage !== "profile-completion.html") {
+            alert("Please complete your profile.");
+            window.location.href = "profile-completion.html";
+          }
+        }).catch((error) => {
+          console.error("Error adding basic user details to Firestore: ", error);
+        });
+      }
+    });
+  } else {
+    // If not authenticated, restrict access to specific pages
+    if (restrictedPages.includes(currentPage)) {
+      alert("You need to log in to access this page.");
+      window.location.href = "signin.html";
+    }
   }
 });
 
+// Document Ready Actions
 document.addEventListener("DOMContentLoaded", () => {
-  // Firebase Auth State Listener to manage UI based on auth state
-  firebase.auth().onAuthStateChanged((user) => {
-    handleAuthStateChange(user);
-  });
-
   // Reference to the Google Sign-In Button
   const googleBtn = document.getElementById("googleSignInBtn");
   if (googleBtn) {
     googleBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      const provider = new firebase.auth.GoogleAuthProvider(); // Create a Google Auth provider
+      const provider = new firebase.auth.GoogleAuthProvider();
 
-      // Sign in using a popup and Google authentication
-      firebase
-        .auth()
-        .signInWithPopup(provider)
+      firebase.auth().signInWithPopup(provider)
         .then((result) => {
           const user = result.user;
-          alert("Sign-in successful! Redirecting to dashboard...");
-          window.location.href = "dashboard.html";
+          const db = firebase.firestore();
+          const userRef = db.collection("users").doc(user.uid);
+
+          userRef.get().then((docSnapshot) => {
+            if (!docSnapshot.exists) {
+              // Add the user details except username
+              userRef.set({
+                name: user.displayName || "No Name Provided",
+                email: user.email,
+                username: "", // Placeholder until provided by user
+              }).then(() => {
+                alert("Please complete your profile.");
+                window.location.href = "profile-completion.html";
+              });
+            } else {
+              alert("Sign-in successful! Redirecting to dashboard...");
+              window.location.href = "dashboard.html";
+            }
+          });
         })
         .catch((error) => {
           const errorMessage = error.message;
@@ -41,45 +88,84 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Reference to the sign-in form
-  const signInForm = document.getElementById("signInForm");
-  if (signInForm) {
-    signInForm.addEventListener("submit", (e) => {
-      e.preventDefault(); // Prevent form from submitting the traditional way
-      const email = document.getElementById("emailInput").value;
-      const password = document.getElementById("passwordInput").value;
+  // Reference to the sign-up form
+const signUpForm = document.getElementById("signUpForm");
+if (signUpForm) {
+  signUpForm.addEventListener("submit", (e) => {
+    e.preventDefault();
 
-      firebase
-        .auth()
-        .signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
-          alert("Sign-in successful! Redirecting to dashboard...");
-          window.location.href = "dashboard.html";
-        })
-        .catch((error) => {
-          const errorMessage = error.message;
-          document.getElementById("signInError").innerText = `Error: ${errorMessage}`;
+    // Get user input values
+    const firstName = document.getElementById("firstName").value;
+    const lastName = document.getElementById("lastName").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    // Create the user using Firebase Authentication
+    firebase.auth().createUserWithEmailAndPassword(email, password)
+      .then((userCredential) => {
+        // Successfully created user, get the user ID
+        const user = userCredential.user;
+
+        // Update the user's display name
+        return user.updateProfile({
+          displayName: `${firstName} ${lastName}`
+        }).then(() => {
+          // Redirect to profile completion page
+          alert("User registration successful. Redirecting to profile completion...");
+          window.location.href = "profile-completion.html";
         });
-    });
-  }
+      })
+      .catch((error) => {
+        // Handle errors during user creation or profile update process
+        const errorMessage = error.message;
+        document.getElementById("signInError").innerText = `Error: ${errorMessage}`;
+      });
+  });
+}
 
-  // Reference to the profile form (used for profile updates, e.g., username)
+
+
+  // Reference to the profile form
   const profileForm = document.getElementById("profileForm");
   if (profileForm) {
     profileForm.addEventListener("submit", (e) => {
-      e.preventDefault(); // Prevent form from submitting the traditional way
+      e.preventDefault();
       const user = firebase.auth().currentUser;
-      const username = document.getElementById("usernameInput").value;
+      const username = document.getElementById("username").value;
 
       if (user) {
-        user.updateProfile({ displayName: username })
+        const db = firebase.firestore();
+
+        // Check if the username is already taken
+        db.collection("users").where("username", "==", username).get()
+          .then((querySnapshot) => {
+            if (!querySnapshot.empty) {
+              // Username already exists
+              document.getElementById("signInError").innerText = `Error: Username "${username}" is already taken.`;
+              return Promise.reject("Username already exists");
+            }
+
+            // Update the user profile in Firestore with the username
+            const userRef = db.collection("users").doc(user.uid);
+            return userRef.update({
+              username: username,
+            });
+          })
           .then(() => {
-            alert('Profile updated successfully!');
-            window.location.href = 'dashboard.html';
+            // Update Firebase user profile with the username
+            return user.updateProfile({
+              displayName: username,
+            });
+          })
+          .then(() => {
+            alert("Profile updated successfully!");
+            window.location.href = "dashboard.html";
           })
           .catch((error) => {
-            console.error('Error updating profile:', error);
+            if (error !== "Username already exists") {
+              console.error("Error updating profile: ", error);
+              document.getElementById("signInError").innerText = `Error: ${error.message}`;
+            }
           });
       }
     });
@@ -93,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
       firebase.auth().signOut()
         .then(() => {
           alert("Sign-out successful!");
-          window.location.href = "index.html"; // Redirect to login or home page
+          window.location.href = "index.html";
         })
         .catch((error) => {
           console.error("Error signing out:", error);
@@ -101,28 +187,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-// Function to handle authentication state changes
-function handleAuthStateChange(user) {
-  const logInButton = document.getElementById("logInBtn");
-  const signUpButton = document.getElementById("signUpBtn");
-  const profileBtn = document.getElementById("profileBtn");
-
-  if (user) {
-    // User is logged in
-    if (logInButton) logInButton.style.display = "none";
-    if (signUpButton) signUpButton.style.display = "none";
-    if (profileBtn) profileBtn.style.display = "block";
-
-    // Set profile initials if available
-    if (user.displayName && document.getElementById("profilePic")) {
-      const initials = user.displayName.split(" ").map(name => name[0]).join("");
-      document.getElementById("profilePic").innerText = initials;
-    }
-  } else {
-    // User is not logged in
-    if (logInButton) logInButton.style.display = "block";
-    if (signUpButton) signUpButton.style.display = "block";
-    if (profileBtn) profileBtn.style.display = "none";
-  }
-}
