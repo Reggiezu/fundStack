@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content="" />
     <meta name="author" content="" />
     <title>Dashboard - FundStack</title>
@@ -32,7 +29,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="firebase-config.js"></script>
   </head>
-  <body id="page-top">
+  <body id="page-top" style="padding-top: 70px;">
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom fixed-top">
       <div class="container px-5">
@@ -89,144 +86,409 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="container mt-5">
-      <h2 class="mb-4">User Transactions <button type="submit" class="btn btn-primary btn-l rounded-pill mt-3" id="newTrans">
-        Add new +
-      </button></h2>
-      <div id="myPopup" class="popup" >
-        <!-- style="display: none" -->
-        <form>
-          <label for="date">Date:</label><br>
-          <input type="date" id="date" name="date"><br><br>
-          <label for="description">Description:</label><br>
-          <input type="text" id="description" name="description"><br><br>
-          <label for="category">Category:</label><br>
-          <input type="text" id="category" name="category"><br><br>
-          <label for="amount">Amount:</label><br>
-          <input type="number" id="amount" name="amount"><br><br>
-          <button type="button" id="closePopup">Close</button>
-          <button type="submit" id="submitPopup">Submit</button>
-        </form>
+    <div class="container-fluid mt-4">
+      <div class="row">
+        <!-- Welcome Section -->
+        <div class="col-lg-9 mb-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h3 class="card-title" id="welcome">Hi, welcome back!</h3>
+              <p>Your web analytics dashboard template.</p>
+              <div class="d-flex">
+                <button class="btn btn-secondary me-3">
+                  <i class="fas fa-envelope"></i> Email
+                </button>
+                <button class="btn btn-secondary me-3">
+                  <i class="fas fa-print"></i> Print
+                </button>
+                <button class="btn btn-primary">
+                  <i class="fas fa-user-plus"></i> Add User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info Cards -->
+        <div class="col-lg-3 mb-4">
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Balance</h5>
+              <h6 class="card-subtitle mb-2 text-muted">$12,345</h6>
+            </div>
+          </div>
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Total Expenses</h5>
+              <h6 class="card-subtitle mb-2 text-muted">$4,567</h6>
+            </div>
+          </div>
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h5 class="card-title">Savings</h5>
+              <h6 class="card-subtitle mb-2 text-muted">$3,000</h6>
+            </div>
+          </div>
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Budget</h5>
+              <h6 class="card-subtitle mb-2 text-muted">$5,000</h6>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="table-responsive">
-        <table class="table table-striped">
-          <thead>
-            <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Description</th>
-              <th scope="col">Category</th>
-              <th scope="col">Amount</th>
-            </tr>
-          </thead>
-          <tbody id="transactionsTableBody">
-            <!-- Transaction rows will be added here dynamically -->
-          </tbody>
-        </table>
+
+      <div class="row">
+        <!-- Purchase History Card -->
+        <div class="col-lg-8 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title">Purchase History</h5>
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#transactionModal"
+                >
+                  Add New Transaction
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">Description</th>
+                      <th scope="col">Category</th>
+                      <th scope="col">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transactionsTableBody">
+                    <!-- Transaction rows will be added here dynamically -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Budget Card -->
+        <div class="col-lg-4 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title">Budget Overview</h5>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#budgetModal"
+                >
+                  Add New Budget
+                </button>
+              </div>
+              <canvas id="budgetChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Goals Card -->
+        <div class="col-lg-6 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Goals</h5>
+              <ul class="list-group">
+                <li class="list-group-item">
+                  <input class="form-check-input me-1" type="checkbox" value="" />
+                  Complete budget report
+                </li>
+                <li class="list-group-item">
+                  <input class="form-check-input me-1" type="checkbox" value="" />
+                  Review transaction history
+                </li>
+                <li class="list-group-item">
+                  <input class="form-check-input me-1" type="checkbox" value="" />
+                  Update savings plan
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar Card -->
+        <div class="col-lg-6 mb-4">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title">Calendar</h5>
+              <div id="calendar"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Footer-->
-    <footer class="py-5 bg-black">
-      <div class="container px-5">
-        <p class="m-0 text-center text-white small">
-          Copyright &copy; FundStack 2024
-        </p>
+    <!-- Modals -->
+    <!-- Transaction Modal -->
+    <div
+      class="modal fade"
+      id="transactionModal"
+      tabindex="-1"
+      aria-labelledby="transactionModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="transactionModalLabel">Add New Transaction</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="transactionForm">
+              <div class="mb-3">
+                <label for="transactionDate" class="form-label">Date</label>
+                <input type="date" class="form-control" id="transactionDate" required />
+              </div>
+              <div class="mb-3">
+                <label for="transactionDescription" class="form-label">Description</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="transactionDescription"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="transactionCategory" class="form-label">Category</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="transactionCategory"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label for="transactionAmount" class="form-label">Amount</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="transactionAmount"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+          </div>
+        </div>
       </div>
-    </footer>
+    </div>
 
+    <!-- Budget Modal -->
+    <div
+      class="modal fade"
+      id="budgetModal"
+      tabindex="-1"
+      aria-labelledby="budgetModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="budgetModalLabel">Add New Budget</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Core theme JS and main logic -->
     <script src="auth.js"></script>
     <script src="main.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        firebase.auth().onAuthStateChanged(function (user) {
-          if (user) {
-            const db = firebase.firestore();
-    
-            // Popup and transaction form logic
-            const transBtn = document.getElementById("newTrans");
-            const popup = document.getElementById("myPopup");
-            const closeButton = document.getElementById("closePopup");
-            const submitButton = document.getElementById("submitPopup");
-    
-            // Show the popup form
-            transBtn.onclick = function () {
-              popup.style.display = "block";
-            };
-    
-            // Close the popup form
-            closeButton.onclick = function () {
-              popup.style.display = "none";
-            };
-    
-            // Close the popup form if clicking outside the popup
-            window.onclick = function (event) {
-              if (event.target == popup) {
-                popup.style.display = "none";
-              }
-            };
-    
-            // Submit the form and add transaction to Firestore
-            submitButton.onclick = function (e) {
-              e.preventDefault(); // Prevent page refresh
-    
-              // Get input values from the form
-              const dateValue = document.getElementById("date").value;
-              const descriptionValue = document.getElementById("description").value;
-              const categoryValue = document.getElementById("category").value;
-              const amountValue = parseFloat(document.getElementById("amount").value);
-    
-              // Add the transaction to Firestore
-              db.collection("transactions")
-                .add({
-                  userId: user.uid,
-                  date: dateValue,
-                  description: descriptionValue,
-                  category: categoryValue,
-                  amount: amountValue,
-                })
-                .then(() => {
-                  alert("Transaction added successfully.");
-                  popup.style.display = "none"; // Close the popup after saving
-                })
-                .catch((error) => {
-                  console.error("Error adding transaction: ", error);
-                });
-            };
-    
-            // Reference to transactions collection for the current user
-            const transactionsRef = db
-              .collection("transactions")
-              .where("userId", "==", user.uid);
-    
-            // Real-time listener for fetching transactions
-            transactionsRef.onSnapshot((querySnapshot) => {
-              const transactionsTableBody = document.getElementById("transactionsTableBody");
-              transactionsTableBody.innerHTML = ""; // Clear existing rows
+        document.addEventListener("DOMContentLoaded", function () {
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (user) {
+      const db = firebase.firestore();
+      const userId = user.uid;
+      const userFLname = user.displayName;
+      const welcomeName = document.getElementById("welcome")
+      
+      welcomeName.innerHTML = `Hi, Welcome Back ${userFLname}!`;
+      // Transaction Form Logic
+      const transactionForm = document.getElementById("transactionForm");
+      if (transactionForm) {
+        console.log("Transaction form found:", transactionForm);
+        transactionForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const date = document.getElementById("transactionDate").value;
+          const description = document.getElementById("transactionDescription").value;
+          const category = document.getElementById("transactionCategory").value;
+          const amount = parseFloat(document.getElementById("transactionAmount").value);
+
+          if (date && description && category && amount) {
+            db.collection("transactions").add({
+              userId: userId,
+              date: date,
+              description: description,
+              category: category,
+              amount: amount
+            })
+              .then(() => {
+                alert("New transaction added successfully!");
+                document.getElementById("transactionModal").querySelector('.btn-close').click();
+                location.reload(); // Reload page to see updated data
+              })
+              .catch((error) => {
+                console.error("Error adding new transaction: ", error);
+              });
+          }
+        });
+      } else {
+        console.error("Transaction form not found.");
+      }
+
+      // Budget Form Logic
+      const budgetForm = document.getElementById("budgetForm");
+      if (budgetForm) {
+        console.log("Budget form found:", budgetForm);
+        budgetForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const category = document.getElementById("budgetCategory").value;
+          const amount = parseFloat(document.getElementById("budgetAmount").value);
+
+          if (category && amount) {
+            db.collection("budgets").add({
+              userId: userId,
+              category: category,
+              amount: amount
+            })
+              .then(() => {
+                alert("New budget added successfully!");
+                document.getElementById("budgetModal").querySelector('.btn-close').click();
+                location.reload(); // Reload page to see updated data
+              })
+              .catch((error) => {
+                console.error("Error adding new budget: ", error);
+              });
+          }
+        });
+      } else {
+        console.error("Budget form not found.");
+      }
+
+      // Fetch Transactions
+      db.collection("transactions")
+        .where("userId", "==", userId)
+        .get()
+        .then((querySnapshot) => {
+          const transactionsTableBody = document.getElementById("transactionsTableBody");
+          if (transactionsTableBody) {
+            transactionsTableBody.innerHTML = ""; // Clear previous data to avoid duplicates
+
+            if (querySnapshot.empty) {
+              console.log("No transactions found for the user.");
+            } else {
               querySnapshot.forEach((doc) => {
                 const transaction = doc.data();
                 const row = document.createElement("tr");
-    
-                row.innerHTML = `
-                      <td>${transaction.date}</td>
-                      <td>${transaction.description}</td>
-                      <td>${transaction.category}</td>
-                      <td>${transaction.amount}</td>
-                  `;
-                transactionsTableBody.appendChild(row);
+if (transaction) {
+  row.innerHTML = `
+    <td>${transaction.date || 'N/A'}</td>
+    <td>${transaction.description || 'N/A'}</td>
+    <td>${transaction.category || 'N/A'}</td>
+    <td>$${transaction.amount || 'N/A'}</td>
+  `;
+  transactionsTableBody.appendChild(row);
+}
+
               });
-            }, (error) => {
-              console.error("Error fetching transactions: ", error);
-            });
-    
+            }
           } else {
-            console.log("No user is signed in, redirecting to login page.");
-            window.location.href = "signin.html";
+            console.error("Transactions table body not found.");
           }
+        })
+        .catch((error) => {
+          console.error("Error fetching transactions: ", error);
         });
-      });
-    </script>      
-  </body>
+
+      // Budget Pie Chart Section
+      const ctx = document.getElementById("budgetChart")?.getContext("2d");
+
+      if (ctx) {
+        db.collection("budgets").where("userId", "==", userId)
+          .get()
+          .then((querySnapshot) => {
+            const budgetData = [];
+            const budgetLabels = [];
+
+            querySnapshot.forEach((doc) => {
+              const budget = doc.data();
+              budgetLabels.push(budget.category);
+              budgetData.push(budget.amount);
+            });
+
+            new Chart(ctx, {
+              type: "pie",
+              data: {
+                labels: budgetLabels,
+                datasets: [{
+                  data: budgetData,
+                  backgroundColor: [
+                    "#b91d47",
+                    "#00aba9",
+                    "#2b5797",
+                    "#e8c3b9",
+                    "#1e7145"
+                  ],
+                }]
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                  },
+                  title: {
+                    display: true,
+                    text: 'Budget Overview by Category'
+                  }
+                }
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching budget data: ", error);
+          });
+      } else {
+        console.error("Budget chart context not found.");
+      }
+    } else {
+      console.log("No user is signed in, redirecting to login page.");
+      window.location.href = "signin.html";
+    }
+  });
+});
+      </script>
+</body>
+
 </html>
