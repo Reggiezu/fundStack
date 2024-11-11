@@ -122,7 +122,37 @@ if (signUpForm) {
       });
   });
 }
-
+  // Reference to the sign-in form
+  const signInForm = document.getElementById("signInForm");
+  if (signInForm) {
+    signInForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+  
+      // Get user input values
+      const email = document.getElementById("emailInput").value;
+      const password = document.getElementById("passwordInput").value;
+  
+      // Create the user using Firebase Authentication
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Successfully sign in user, get the user ID
+          const user = userCredential.user;
+  
+          // Update the user's display name
+          return user.updateProfile({
+          }).then(() => {
+            // Redirect to dashboard page
+            window.location.href = "dashboard.html";
+          });
+        })
+        .catch((error) => {
+          // Handle errors during user creation or profile update process
+          const errorMessage = error.message;
+          document.getElementById("signInError").innerText = `Error: ${errorMessage}`;
+          console.log(errorMessage)
+        });
+    });
+  }
 
 
   // Reference to the profile form
