@@ -312,6 +312,27 @@
         </div>
       </div>
     </div>
+    <!-- Delete Confirmation Modal -->
+<div id="deleteTransactionModal" class="modal fade" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header">
+              <h5 class="modal-title" id="deleteModalLabel">Delete Transaction</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+              <p>You are about to delete this transaction, and this action cannot be undone.</p>
+              <p>Are you sure you want to proceed?</p>
+              <p id="debug-url"></p>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="keepData">No, Keep It</button>
+              <button type="button" class="btn btn-danger" id="confirmDeleteTransaction">Yes, Delete It</button>
+          </div>
+      </div>
+  </div>
+</div>
+
   </div>
   
     <!-- Bootstrap core JS-->
@@ -322,7 +343,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
-    <script>
+    <script> 
         document.addEventListener("DOMContentLoaded", function () {
   firebase.auth().onAuthStateChanged(function (user) {
     if (user) {
@@ -407,6 +428,7 @@
 
             if (querySnapshot.empty) {
               console.log("No transactions found for the user.");
+              transactionsTableBody.innerHTML="No transactions found";
             } else {
               querySnapshot.forEach((doc) => {
                 const transaction = doc.data();
@@ -417,11 +439,56 @@ if (transaction) {
     <td>${transaction.description || 'N/A'}</td>
     <td>${transaction.category || 'N/A'}</td>
     <td>$${transaction.amount || 'N/A'}</td>
-  `;
+    <td>
+    <button class="transaction-edit" aria-label="Edit transaction" data-transaction-id="${doc.id}">
+    <i class="fas fa-edit"></i>
+  </button>
+</td>
+<td>
+  <button class="transaction-delete" aria-label="Delete transaction" data-transaction-id="${doc.id}">
+    <i class="fas fa-trash"></i>
+  </button>
+</td>
+  `
+  ;
   transactionsTableBody.appendChild(row);
 }
 
               });
+             
+document.querySelectorAll('.transaction-delete').forEach(button => {
+  button.addEventListener('click', (event) => {
+    const transactionId = event.currentTarget.getAttribute('data-transaction-id');
+    if (transactionId) {
+      const deleteModal = new bootstrap.Modal(document.getElementById("deleteTransactionModal"));
+      
+      
+      // Show the modal
+      deleteModal.show();
+
+      const deleteTranBtn = document.getElementById("confirmDeleteTransaction");
+      deleteTranBtn.onclick =()=>{
+        deleteTransaction(transactionId);
+        deleteModal.hide();
+      };
+      const cancelTranBtn = document.getElementById("keepData");
+      cancelTranBtn.onclick=()=>{
+        deleteModal.hide();
+      };
+    } else {
+      console.error('Transaction ID is not set or is empty.');
+    }
+  });
+});
+const deleteTransaction = (transactionId) => {
+  db.collection("transactions").doc(transactionId).delete().then(() => {
+    alert("Transaction successfully deleted !");
+    document.querySelector(`[data-transaction-id="${transactionId}"]`).closest('tr').remove();
+}).catch((error) => {
+    console.error("Error removing document: ", error);
+});
+}
+            
             }
           } else {
             console.error("Transactions table body not found.");
@@ -487,7 +554,9 @@ if (transaction) {
       window.location.href = "signin.html";
     }
   });
+  
 });
+
       </script>
 </body>
 
