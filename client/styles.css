@@ -22,6 +22,20 @@
   justify-content: center;
   font-size: 1.2em;
 }
+.transaction-edit, .transaction-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.transaction-edit:hover, .transaction-delete:hover {
+  transform: scale(1.1);
+}
+
+.transaction-edit i, .transaction-delete i {
+  color: #4d4d62;
+}
 
 :root {
   --bs-blue: #0d6efd;
