@@ -291,119 +291,208 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
     <script> 
-        document.addEventListener("DOMContentLoaded", function () {
-  firebase.auth().onAuthStateChanged(function (user) {
-    if (user) {
-      const db = firebase.firestore();
-      const userId = user.uid;
-      const userFLname = user.displayName;
-      const welcomeName = document.getElementById("welcome")
-      
-      welcomeName.innerHTML = `Hi, Welcome Back ${userFLname}!`;
-      // Transaction Form Logic
-      const transactionForm = document.getElementById("transactionForm");
-      if (transactionForm) {
-        console.log("Transaction form found:", transactionForm);
-        transactionForm.addEventListener("submit", function (event) {
-          event.preventDefault();
+      document.addEventListener("DOMContentLoaded", function () {
+          firebase.auth().onAuthStateChanged(function (user) {
+              if (user) {
+                  const db = firebase.firestore();
+                  const userId = user.uid;
+                  const userFLname = user.displayName;
+                  const welcomeName = document.getElementById("welcome");
+                  
+                  welcomeName.innerHTML = `Hi, Welcome Back ${userFLname}!`;
+                  let currentTransactionId = null; // To keep track of the transaction being edited
+                  
+                  // Transaction Form Logic
+                  const transactionForm = document.getElementById("transactionForm");
+                  if (transactionForm) {
+                      console.log("Transaction form found:", transactionForm);
+                      transactionForm.addEventListener("submit", function (event) {
+                          event.preventDefault();
+                          handleTransaction();
+                      });
+                  }
+                  // Also handle close button specifically in case of a direct click
+        const closeButton = transactionModal.querySelector('.btn-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                // Reset the form fields
+            document.getElementById("transactionForm").reset();
+            
+            // Reset the modal title to "Add Transaction"
+            document.getElementById("transactionModalLabel").innerHTML = "Add Transaction";
 
-          const date = document.getElementById("transactionDate").value;
-          const description = document.getElementById("transactionDescription").value;
-          const category = document.getElementById("transactionCategory").value;
-          const amount = parseFloat(document.getElementById("transactionAmount").value);
+            // Reset the transaction ID to null to indicate a new transaction
+            currentTransactionId = null;
+            console.log("Transaction modal reset after closing");
+            });
+        } else {
+        console.error("Transaction modal not found.");
+    }
+          
 
-          if (date && description && category && amount) {
-            db.collection("transactions").add({
-              userId: userId,
-              date: date,
-              description: description,
-              category: category,
-              amount: amount
-            })
-              .then(() => {
-                alert("New transaction added successfully!");
-                document.getElementById("transactionModal").querySelector('.btn-close').click();
-                location.reload(); // Reload page to see updated data
-              })
-              .catch((error) => {
-                console.error("Error adding new transaction: ", error);
-              });
-          }
-        });
-      } else {
-        console.error("Transaction form not found.");
-      }
+                  function handleTransaction(transactionId) {
+                      if (currentTransactionId != null) {
+                          editTransaction(currentTransactionId);
+                      } else {
+                          addTransaction();
+                      }
+                  }
+  
+                  function addTransaction() {
+                      const date = document.getElementById("transactionDate").value;
+                      const description = document.getElementById("transactionDescription").value;
+                      const category = document.getElementById("transactionCategory").value;
+                      const amount = parseFloat(document.getElementById("transactionAmount").value);
+  
+                      if (date && description && category && amount && currentTransactionId === null) {
+                          db.collection("transactions").add({
+                              userId: userId,
+                              date: date,
+                              description: description,
+                              category: category,
+                              amount: amount
+                          })
+                          .then(() => {
+                              alert("New transaction added successfully!");
+                              document.getElementById("transactionModal").querySelector('.btn-close').click();
+                              location.reload(); // Reload page to see updated data
+                          })
+                          .catch((error) => {
+                              console.error("Error adding new transaction:", error);
+                          });
+                      }
+                  }
+  
+                  function editTransaction(transactionId) {
+                    // Fetch the transaction document from Firestore
+  firebase.firestore().collection("transactions").doc(transactionId).get()
+    .then((doc) => {
+      if (doc.exists) {
+        const transaction = doc.data();
+        
+        
+        // Populate the modal fields with transaction data
+        document.getElementById("transactionDate").value = transaction.date;
+        document.getElementById("transactionModalLabel").innerHTML= "Edit Transaction"
+        document.getElementById("transactionDescription").value = transaction.description;
+        document.getElementById("transactionCategory").value = transaction.category;
+        document.getElementById("transactionAmount").value = transaction.amount;
 
-      // Budget Form Logic
-      const budgetForm = document.getElementById("budgetForm");
-      if (budgetForm) {
-        console.log("Budget form found:", budgetForm);
-        budgetForm.addEventListener("submit", function (event) {
-          event.preventDefault();
+       
+  
+                                          // Show the modal
+                                          const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'), {});
+                                          transactionModal.show();
+                                          document.getElementById('transactionModal').addEventListener('submit', function(event) {
+                                            event.preventDefault();                                  
+ // Grab edited data 
+        
+ const date = document.getElementById("transactionDate").value;
+                      const description = document.getElementById("transactionDescription").value;
+                      const category = document.getElementById("transactionCategory").value;
+                      const amount = parseFloat(document.getElementById("transactionAmount").value);
+                      
+                      if (date && description && category && amount && currentTransactionId != null) {
+                          db.collection("transactions").doc(transactionId).update({
+                              date: date,
+                              description: description,
+                              category: category,
+                              amount: amount
+                          })
+                          .then(() => {
+                              alert("Transaction successfully edited!");
+                              currentTransactionId = null; // Reset the flag
+                              document.getElementById("transactionModal").querySelector('.btn-close').click();
+                              location.reload(); // Reload page to see updated data
+                          })
+                          .catch((error) => {
+                              console.error("Error updating transaction:", error);
+                          });
+                      }
+                  })}})};
+  
+                  
+  
+                  // Budget Form Logic
+                  const budgetForm = document.getElementById("budgetForm");
+                  if (budgetForm) {
+                      console.log("Budget form found:", budgetForm);
+                      budgetForm.addEventListener("submit", function (event) {
+                          event.preventDefault();
+  
+                          const category = document.getElementById("budgetCategory").value;
+                          const amount = parseFloat(document.getElementById("budgetAmount").value);
+  
+                          if (category && amount) {
+                              db.collection("budgets").add({
+                                  userId: userId,
+                                  category: category,
+                                  amount: amount
+                              })
+                              .then(() => {
+                                  alert("New budget added successfully!");
+                                  document.getElementById("budgetModal").querySelector('.btn-close').click();
+                                  location.reload(); // Reload page to see updated data
+                              })
+                              .catch((error) => {
+                                  console.error("Error adding new budget:", error);
+                              });
+                          }
+                      });
+                  } else {
+                      console.error("Budget form not found.");
+                  }
+  
+                  // Fetch Transactions
+                  db.collection("transactions")
+                      .where("userId", "==", userId)
+                      .get()
+                      .then((querySnapshot) => {
+                          const transactionsTableBody = document.getElementById("transactionsTableBody");
+                          if (transactionsTableBody) {
+                              transactionsTableBody.innerHTML = ""; // Clear previous data to avoid duplicates
+  
+                              if (querySnapshot.empty) {
+                                  console.log("No transactions found for the user.");
+                                  transactionsTableBody.innerHTML = "No transactions found";
+                              } else {
+                                  querySnapshot.forEach((doc) => {
+                                      const transaction = doc.data();
+                                      const row = document.createElement("tr");
+                                      if (transaction) {
+                                          row.innerHTML = `
+                                              <td>${transaction.date || 'N/A'}</td>
+                                              <td>${transaction.description || 'N/A'}</td>
+                                              <td>${transaction.category || 'N/A'}</td>
+                                              <td>$${transaction.amount || 'N/A'}</td>
+                                              <td>
+                                                  <button class="transaction-edit" aria-label="Edit transaction" data-transaction-id="${doc.id}">
+                                                      <i class="fas fa-edit"></i>
+                                                  </button>
+                                              </td>
+                                              <td>
+                                                  <button class="transaction-delete" aria-label="Delete transaction" data-transaction-id="${doc.id}">
+                                                      <i class="fas fa-trash"></i>
+                                                  </button>
+                                              </td>
+                                          `;
+                                          transactionsTableBody.appendChild(row);
+                                      }
+                                  });
 
-          const category = document.getElementById("budgetCategory").value;
-          const amount = parseFloat(document.getElementById("budgetAmount").value);
-
-          if (category && amount) {
-            db.collection("budgets").add({
-              userId: userId,
-              category: category,
-              amount: amount
-            })
-              .then(() => {
-                alert("New budget added successfully!");
-                document.getElementById("budgetModal").querySelector('.btn-close').click();
-                location.reload(); // Reload page to see updated data
-              })
-              .catch((error) => {
-                console.error("Error adding new budget: ", error);
-              });
-          }
-        });
-      } else {
-        console.error("Budget form not found.");
-      }
-
-      // Fetch Transactions
-      db.collection("transactions")
-        .where("userId", "==", userId)
-        .get()
-        .then((querySnapshot) => {
-          const transactionsTableBody = document.getElementById("transactionsTableBody");
-          if (transactionsTableBody) {
-            transactionsTableBody.innerHTML = ""; // Clear previous data to avoid duplicates
-
-            if (querySnapshot.empty) {
-              console.log("No transactions found for the user.");
-              transactionsTableBody.innerHTML="No transactions found";
-            } else {
-              querySnapshot.forEach((doc) => {
-                const transaction = doc.data();
-                const row = document.createElement("tr");
-if (transaction) {
-  row.innerHTML = `
-    <td>${transaction.date || 'N/A'}</td>
-    <td>${transaction.description || 'N/A'}</td>
-    <td>${transaction.category || 'N/A'}</td>
-    <td>$${transaction.amount || 'N/A'}</td>
-    <td>
-    <button class="transaction-edit" aria-label="Edit transaction" data-transaction-id="${doc.id}">
-    <i class="fas fa-edit"></i>
-  </button>
-</td>
-<td>
-  <button class="transaction-delete" aria-label="Delete transaction" data-transaction-id="${doc.id}">
-    <i class="fas fa-trash"></i>
-  </button>
-</td>
-  `
-  ;
-  transactionsTableBody.appendChild(row);
-}
-
-              });
-             
-document.querySelectorAll('.transaction-delete').forEach(button => {
+                                  //Edit Transaction
+                                  document.querySelectorAll('.transaction-edit').forEach(button => {
+  button.addEventListener('click', (event) => {
+    const transactionId = event.currentTarget.getAttribute('data-transaction-id');
+    if (transactionId) {
+      currentTransactionId = transactionId;
+      handleTransaction()
+    } else {
+      console.error('Transaction ID is not set or is empty.');
+    }
+  })});
+                                  //Delete Transaction 
+                                  document.querySelectorAll('.transaction-delete').forEach(button => {
   button.addEventListener('click', (event) => {
     const transactionId = event.currentTarget.getAttribute('data-transaction-id');
     if (transactionId) {
@@ -434,77 +523,75 @@ const deleteTransaction = (transactionId) => {
 }).catch((error) => {
     console.error("Error removing document: ", error);
 });
-}
-            
             }
-          } else {
-            console.error("Transactions table body not found.");
-          }
-        })
-        .catch((error) => {
-          console.error("Error fetching transactions: ", error);
-        });
-
-      // Budget Pie Chart Section
-      const ctx = document.getElementById("budgetChart")?.getContext("2d");
-
-      if (ctx) {
-        db.collection("budgets").where("userId", "==", userId)
-          .get()
-          .then((querySnapshot) => {
-            const budgetData = [];
-            const budgetLabels = [];
-
-            querySnapshot.forEach((doc) => {
-              const budget = doc.data();
-              budgetLabels.push(budget.category);
-              budgetData.push(budget.amount);
-            });
-
-            new Chart(ctx, {
-              type: "pie",
-              data: {
-                labels: budgetLabels,
-                datasets: [{
-                  data: budgetData,
-                  backgroundColor: [
-                    "#b91d47",
-                    "#00aba9",
-                    "#2b5797",
-                    "#e8c3b9",
-                    "#1e7145"
-                  ],
-                }]
-              },
-              options: {
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: 'top',
-                  },
-                  title: {
-                    display: true,
-                    text: 'Budget Overview by Category'
-                  }
-                }
-              }
-            });
-          })
-          .catch((error) => {
-            console.error("Error fetching budget data: ", error);
-          });
-      } else {
-        console.error("Budget chart context not found.");
-      }
-    } else {
-      console.log("No user is signed in, redirecting to login page.");
-      window.location.href = "signin.html";
-    }
-  });
+                              }
+                          } else {
+                              console.error("Transactions table body not found.");
+                          }
+                      })
+                      .catch((error) => {
+                          console.error("Error fetching transactions:", error);
+                      });
   
-});
-
-      </script>
+                  // Budget Pie Chart Section
+                  const ctx = document.getElementById("budgetChart")?.getContext("2d");
+  
+                  if (ctx) {
+                      db.collection("budgets").where("userId", "==", userId)
+                          .get()
+                          .then((querySnapshot) => {
+                              const budgetData = [];
+                              const budgetLabels = [];
+  
+                              querySnapshot.forEach((doc) => {
+                                  const budget = doc.data();
+                                  budgetLabels.push(budget.category);
+                                  budgetData.push(budget.amount);
+                              });
+  
+                              new Chart(ctx, {
+                                  type: "pie",
+                                  data: {
+                                      labels: budgetLabels,
+                                      datasets: [{
+                                          data: budgetData,
+                                          backgroundColor: [
+                                              "#b91d47",
+                                              "#00aba9",
+                                              "#2b5797",
+                                              "#e8c3b9",
+                                              "#1e7145"
+                                          ],
+                                      }]
+                                  },
+                                  options: {
+                                      responsive: true,
+                                      plugins: {
+                                          legend: {
+                                              position: 'top',
+                                          },
+                                          title: {
+                                              display: true,
+                                              text: 'Budget Overview by Category'
+                                          }
+                                      }
+                                  }
+                              });
+                          })
+                          .catch((error) => {
+                              console.error("Error fetching budget data:", error);
+                          });
+                  } else {
+                      console.error("Budget chart context not found.");
+                  }
+              } else {
+                  console.log("No user is signed in, redirecting to login page.");
+                  window.location.href = "signin.html";
+              }
+          });
+      });
+  </script>
+  
 </body>
 
 </html>
