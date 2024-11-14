@@ -120,22 +120,22 @@
           </div>
         </div>
 
-        <!-- Budget Card -->
+        <!-- Category Card -->
         <div class="col-lg-4 mb-4">
           <div class="card shadow-sm">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title">Budget Overview</h5>
+                <h5 class="card-title">Category Overview</h5>
                 <button
                   type="button"
                   class="btn btn-secondary"
                   data-bs-toggle="modal"
-                  data-bs-target="#budgetModal"
+                  data-bs-target="#categoryModal"
                 >
-                  Add New Budget
+                  Add New Category +
                 </button>
               </div>
-              <canvas id="budgetChart"></canvas>
+              <canvas id="categoryChart"></canvas>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@
               <ul class="list-group">
                 <li class="list-group-item">
                   <input class="form-check-input me-1" type="checkbox" value="" />
-                  Complete budget report
+                  Complete category report
                 </li>
                 <li class="list-group-item">
                   <input class="form-check-input me-1" type="checkbox" value="" />
@@ -237,27 +237,119 @@
       </div>
     </div>
 
-    <!-- Budget Modal -->
+    <!-- category Modal -->
     <div
       class="modal fade"
-      id="budgetModal"
+      id="categoryModal"
       tabindex="-1"
-      aria-labelledby="budgetModalLabel"
+      aria-labelledby="categoryModalLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="budgetModalLabel">Add New Budget</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="categoryModalLabel">Add New Category</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <form id="transactionForm">
+            <div class="mb-3">
+              <label for="categoryName" class="form-label">Category Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="categoryName"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <p>Category Type:</p>
+              <div class="form-check">    
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" value="expense">
+                <label class="form-check-label" for="flexRadioDefault1">
+                  Expense
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault2" checked value="saving">
+                <label class="form-check-label" for="flexRadioDefault2">
+                  Saving
+                </label>
+              </div>              
+            </div>
+            <div class="mb-3">
+              <label for="transactionAmount" class="form-label">Amount</label>
+              <input
+                type="number"
+                class="form-control"
+                id="transactionAmount"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
         </div>
       </div>
+    </div>
+    </div>
+    <!-- Balance Modal -->
+    <div
+      class="modal fade"
+      id="balanceModal"
+      tabindex="-1"
+      aria-labelledby="balanceModalLabel"
+      aria-hidden="true"
+    >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="transactionModalLabel">Add New Category</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <form id="transactionForm">
+            <div class="mb-3">
+              <label for="categoryName" class="form-label">Category Name</label>
+              <input
+                type="text"
+                class="form-control"
+                id="transactionDescription"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="transactionCategory" class="form-label">Account</label>
+              <input
+                type="text"
+                class="form-control"
+                id="transactionCategory"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label for="transactionAmount" class="form-label">Amount</label>
+              <input
+                type="number"
+                class="form-control"
+                id="transactionAmount"
+                required
+              />
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+          </form>
+        </div>
+      </div>
+    </div>
     </div>
     <!-- Delete Confirmation Modal -->
 <div id="deleteTransactionModal" class="modal fade" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -298,6 +390,7 @@
                   const userId = user.uid;
                   const userFLname = user.displayName;
                   const welcomeName = document.getElementById("welcome");
+                  const balance = user.balance;
                   
                   welcomeName.innerHTML = `Hi, Welcome Back ${userFLname}!`;
                   let currentTransactionId = null; // To keep track of the transaction being edited
@@ -391,7 +484,7 @@
                       const description = document.getElementById("transactionDescription").value;
                       const category = document.getElementById("transactionCategory").value;
                       const amount = parseFloat(document.getElementById("transactionAmount").value);
-                      
+
                       if (date && description && category && amount && currentTransactionId != null) {
                           db.collection("transactions").doc(transactionId).update({
                               date: date,
@@ -413,34 +506,34 @@
   
                   
   
-                  // Budget Form Logic
-                  const budgetForm = document.getElementById("budgetForm");
-                  if (budgetForm) {
-                      console.log("Budget form found:", budgetForm);
-                      budgetForm.addEventListener("submit", function (event) {
+                  // category Form Logic
+                  const categoryForm = document.getElementById("categoryForm");
+                  if (categoryForm) {
+                      console.log("category form found:", categoryForm);
+                      categoryForm.addEventListener("submit", function (event) {
                           event.preventDefault();
   
-                          const category = document.getElementById("budgetCategory").value;
-                          const amount = parseFloat(document.getElementById("budgetAmount").value);
+                          const category = document.getElementById("categoryCategory").value;
+                          const amount = parseFloat(document.getElementById("categoryAmount").value);
   
                           if (category && amount) {
-                              db.collection("budgets").add({
+                              db.collection("categorys").add({
                                   userId: userId,
                                   category: category,
                                   amount: amount
                               })
                               .then(() => {
-                                  alert("New budget added successfully!");
-                                  document.getElementById("budgetModal").querySelector('.btn-close').click();
+                                  alert("New category added successfully!");
+                                  document.getElementById("categoryModal").querySelector('.btn-close').click();
                                   location.reload(); // Reload page to see updated data
                               })
                               .catch((error) => {
-                                  console.error("Error adding new budget:", error);
+                                  console.error("Error adding new category:", error);
                               });
                           }
                       });
                   } else {
-                      console.error("Budget form not found.");
+                      console.error("category form not found.");
                   }
   
                   // Fetch Transactions
@@ -532,29 +625,31 @@ const deleteTransaction = (transactionId) => {
                       .catch((error) => {
                           console.error("Error fetching transactions:", error);
                       });
-  
-                  // Budget Pie Chart Section
-                  const ctx = document.getElementById("budgetChart")?.getContext("2d");
+  if(user.balance){
+
+  }
+                  // category Pie Chart Section
+                  const ctx = document.getElementById("categoryChart")?.getContext("2d");
   
                   if (ctx) {
-                      db.collection("budgets").where("userId", "==", userId)
+                      db.collection("categories").where("userId", "==", userId)
                           .get()
                           .then((querySnapshot) => {
-                              const budgetData = [];
-                              const budgetLabels = [];
+                              const categoryData = [];
+                              const categoryLabels = [];
   
                               querySnapshot.forEach((doc) => {
-                                  const budget = doc.data();
-                                  budgetLabels.push(budget.category);
-                                  budgetData.push(budget.amount);
+                                  const category = doc.data();
+                                  categoryLabels.push(category.category);
+                                  categoryData.push(category.amount);
                               });
   
                               new Chart(ctx, {
                                   type: "pie",
                                   data: {
-                                      labels: budgetLabels,
+                                      labels: categoryLabels,
                                       datasets: [{
-                                          data: budgetData,
+                                          data: categoryData,
                                           backgroundColor: [
                                               "#b91d47",
                                               "#00aba9",
@@ -572,17 +667,17 @@ const deleteTransaction = (transactionId) => {
                                           },
                                           title: {
                                               display: true,
-                                              text: 'Budget Overview by Category'
+                                              text: 'category Overview by Category'
                                           }
                                       }
                                   }
                               });
                           })
                           .catch((error) => {
-                              console.error("Error fetching budget data:", error);
+                              console.error("Error fetching category data:", error);
                           });
                   } else {
-                      console.error("Budget chart context not found.");
+                      console.error("category chart context not found.");
                   }
               } else {
                   console.log("No user is signed in, redirecting to login page.");
