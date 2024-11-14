@@ -111,72 +111,82 @@
     <script src="auth.js"></script>
     <script src="main.js"></script>
     <script>
-  document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", () => {
+        // Firebase Authentication listener to check the user state
+        firebase.auth().onAuthStateChanged((user) => {
+          if (user) {
+            // User is logged in, now proceed with the profile completion
+            alert("Please complete your account information.");
 
-  // Firebase Authentication listener to check the user state
-  firebase.auth().onAuthStateChanged((user) => {
-    if (user) {
-      // User is logged in, now proceed with the profile completion
-      alert("Please complete your account information.");
+            // Reference to the form on the profile-completion page
+            const profileForm = document.getElementById(
+              "profileCompletionForm"
+            );
+            if (profileForm) {
+              profileForm.addEventListener("submit", (e) => {
+                e.preventDefault(); // Prevent the default form submission
 
-      // Reference to the form on the profile-completion page
-      const profileForm = document.getElementById("profileCompletionForm");
-      if (profileForm) {
-        profileForm.addEventListener("submit", (e) => {
-          e.preventDefault(); // Prevent the default form submission
+                // Get the username from the input
+                const username = document.getElementById("username").value;
 
-          // Get the username from the input
-          const username = document.getElementById("username").value;
+                if (username.trim() !== "") {
+                  // Reference Firestore
+                  const db = firebase.firestore();
 
-          if (username.trim() !== "") {
-            // Reference Firestore
-            const db = firebase.firestore();
-
-            // Save user data to Firestore after the profile is completed
-            db.collection("users").doc(user.uid).set({
-              name: user.displayName,
-              email: user.email,
-              username: username,
-            })
-              .then(() => {
-                alert("Profile completed successfully! Redirecting to the dashboard...");
-                window.location.href = "dashboard.html"; // Redirect after profile completion
-              })
-              .catch((error) => {
-                console.error("Error updating profile: ", error);
-                document.getElementById("signInError").innerText = `Error: ${error.message}`;
+                  // Save user data to Firestore after the profile is completed
+                  db.collection("users")
+                    .doc(user.uid)
+                    .set({
+                      name: user.displayName,
+                      email: user.email,
+                      username: username,
+                      balance: null, // Not yet set
+                      recentTransactions: [], // No transactions yet
+                      assignedCategories: {}, // Categories not yet assigned
+                      accounts: [], // No linked accounts yet
+                    })
+                    .then(() => {
+                      alert(
+                        "Profile completed successfully! Redirecting to the dashboard..."
+                      );
+                      window.location.href = "dashboard.html"; // Redirect after profile completion
+                    })
+                    .catch((error) => {
+                      console.error("Error updating profile: ", error);
+                      document.getElementById(
+                        "signInError"
+                      ).innerText = `Error: ${error.message}`;
+                    });
+                } else {
+                  document.getElementById("signInError").innerText =
+                    "Error: Username cannot be empty.";
+                }
               });
+            }
           } else {
-            document.getElementById("signInError").innerText = "Error: Username cannot be empty.";
+            console.error("No user signed in");
+            // Optionally redirect to sign-in page if no user is logged in
+            window.location.href = "signin.html";
           }
         });
-      }
-    } else {
-      console.error("No user signed in");
-      // Optionally redirect to sign-in page if no user is logged in
-      window.location.href = "signin.html";
-    }
-  });
-});
+      });
     </script>
-    <script
-    >
-document.addEventListener("DOMContentLoaded", () => {
-  // Disable all navbar links
-  const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Disable all navbar links
+        const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
 
-  navLinks.forEach((link) => {
-    link.addEventListener("click", (e) => {
-      e.preventDefault(); // Prevent link from being followed
-    });
+        navLinks.forEach((link) => {
+          link.addEventListener("click", (e) => {
+            e.preventDefault(); // Prevent link from being followed
+          });
 
-    // add a visual cue to show the link is disabled
-    link.classList.add("disabled");
-    link.style.pointerEvents = "none";
-    link.style.cursor = "not-allowed";
-  });
-});
-
-</script>
+          // add a visual cue to show the link is disabled
+          link.classList.add("disabled");
+          link.style.pointerEvents = "none";
+          link.style.cursor = "not-allowed";
+        });
+      });
+    </script>
   </body>
 </html>
