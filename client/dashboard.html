@@ -274,14 +274,19 @@
                   required
                 />
               </div>
+                <p>Category</p>
               <div class="mb-3">
-                <label for="transactionCategory" class="form-label">Category</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="transactionCategory"
-                  required
-                />
+                  <select class="form-select" aria-label="Default select example" id="categoryDropdown" name="category" required>
+                  <option value="" disabled selected>Select Category</option>
+                  <!-- Category options will be dynamically populated here -->
+                </select>                
+                </div>
+                <p>Account:</p>
+                <div class="mb-3">
+                  <select class="form-select" aria-label="Default select example" id="accountDropdown" name="account" required>
+                 <option value="" disabled selected>Select Account</option>
+                  <!-- Account options will be dynamically populated here -->
+                </select>                
               </div>
               <div class="mb-3">
                 <label for="transactionAmount" class="form-label">Amount</label>
@@ -486,24 +491,71 @@
                           handleTransaction();
                       });
                   }
-                  // Also handle close button specifically in case of a direct click
-        const closeButton = transactionModal.querySelector('.btn-close');
-        if (closeButton) {
-            closeButton.addEventListener('click', function() {
-                // Reset the form fields
-            document.getElementById("transactionForm").reset();
-            
-            // Reset the modal title to "Add Transaction"
-            document.getElementById("transactionModalLabel").innerHTML = "Add Transaction";
+                  //Transaction Form Accounts and Categories
+                  db.collection("accounts")
+                      .where("userId", "==", userId)
+                      .get()
+                      .then((querySnapshot) => {
+                        const accountDropdown = document.getElementById("accountDropdown")
+                              if (querySnapshot.empty) {
+                                  console.log("No accounts found for the user.");
+                                  accountDropdown.innerHTML = "No accounts found";
+                              } else {
+                                  querySnapshot.forEach((doc) => {
+                                      const account = doc.data();
+                                      const options = document.createElement("option");
+                                      if (account) {
+                                          options.innerHTML = `
+                                              ${account.accountName || 'N/A'}
+                                          `;
+                                          accountDropdown.appendChild(options);
+                                      }
+                                      
+                                  });
+                                }
+                          })
+                          db.collection("categories")
+                      .where("userId", "==", userId)
+                      .get()
+                      .then((querySnapshot) => {
+                        const categoryDropdown = document.getElementById("categoryDropdown")
+                              if (querySnapshot.empty) {
+                                  console.log("No categories found for the user.");
+                                  categoryDropdown.innerHTML = "No categories found";
+                              } else {
+                                  querySnapshot.forEach((doc) => {
+                                      const category = doc.data();
+                                      const options = document.createElement("option");
+                                      if (category) {
+                                          options.innerHTML = `
+                                              ${category.name || 'N/A'}
+                                          `;
+                                          categoryDropdown.appendChild(options);
+                                      }
+                                  });
+                                }
+                          })
 
-            // Reset the transaction ID to null to indicate a new transaction
-            currentTransactionId = null;
-            console.log("Transaction modal reset after closing");
-            });
-        } else {
-        console.error("Transaction modal not found.");
-    }
-          
+
+
+                                            // Also handle close button specifically in case of a direct click
+                                  const closeButton = transactionModal.querySelector('.btn-close');
+                                  if (closeButton) {
+                                      closeButton.addEventListener('click', function() {
+                                          // Reset the form fields
+                                      document.getElementById("transactionForm").reset();
+                                      
+                                      // Reset the modal title to "Add Transaction"
+                                      document.getElementById("transactionModalLabel").innerHTML = "Add Transaction";
+
+                                      // Reset the transaction ID to null to indicate a new transaction
+                                      currentTransactionId = null;
+                                      console.log("Transaction modal reset after closing");
+                                      });
+                                  } else {
+                                  console.error("Transaction modal not found.");
+                              }
+                                    
 
                   function handleTransaction(transactionId) {
                       if (currentTransactionId != null) {
@@ -658,48 +710,48 @@
 
                                   //Edit Transaction
                                   document.querySelectorAll('.transaction-edit').forEach(button => {
-  button.addEventListener('click', (event) => {
-    const transactionId = event.currentTarget.getAttribute('data-transaction-id');
-    if (transactionId) {
-      currentTransactionId = transactionId;
-      handleTransaction()
-    } else {
-      console.error('Transaction ID is not set or is empty.');
-    }
-  })});
-                                  //Delete Transaction 
-                                  document.querySelectorAll('.transaction-delete').forEach(button => {
-  button.addEventListener('click', (event) => {
-    const transactionId = event.currentTarget.getAttribute('data-transaction-id');
-    if (transactionId) {
-      const deleteModal = new bootstrap.Modal(document.getElementById("deleteTransactionModal"));
-      
-      
-      // Show the delete modal
-      deleteModal.show();
+                            button.addEventListener('click', (event) => {
+                              const transactionId = event.currentTarget.getAttribute('data-transaction-id');
+                              if (transactionId) {
+                                currentTransactionId = transactionId;
+                                handleTransaction()
+                              } else {
+                                console.error('Transaction ID is not set or is empty.');
+                              }
+                            })});
+                                                            //Delete Transaction 
+                                                            document.querySelectorAll('.transaction-delete').forEach(button => {
+                            button.addEventListener('click', (event) => {
+                              const transactionId = event.currentTarget.getAttribute('data-transaction-id');
+                              if (transactionId) {
+                                const deleteModal = new bootstrap.Modal(document.getElementById("deleteTransactionModal"));
+                                
+                                
+                                // Show the delete modal
+                                deleteModal.show();
 
-      const deleteTranBtn = document.getElementById("confirmDeleteTransaction");
-      deleteTranBtn.onclick =()=>{
-        deleteTransaction(transactionId);
-        deleteModal.hide();
-      };
-      const cancelTranBtn = document.getElementById("keepData");
-      cancelTranBtn.onclick=()=>{
-        deleteModal.hide();
-      };
-    } else {
-      console.error('Transaction ID is not set or is empty.');
-    }
-  });
-});
-const deleteTransaction = (transactionId) => {
-  db.collection("transactions").doc(transactionId).delete().then(() => {
-    alert("Transaction successfully deleted !");
-    document.querySelector(`[data-transaction-id="${transactionId}"]`).closest('tr').remove();
-}).catch((error) => {
-    console.error("Error removing document: ", error);
-});
-            }
+                                const deleteTranBtn = document.getElementById("confirmDeleteTransaction");
+                                deleteTranBtn.onclick =()=>{
+                                  deleteTransaction(transactionId);
+                                  deleteModal.hide();
+                                };
+                                const cancelTranBtn = document.getElementById("keepData");
+                                cancelTranBtn.onclick=()=>{
+                                  deleteModal.hide();
+                                };
+                              } else {
+                                console.error('Transaction ID is not set or is empty.');
+                              }
+                            });
+                          });
+                          const deleteTransaction = (transactionId) => {
+                            db.collection("transactions").doc(transactionId).delete().then(() => {
+                              alert("Transaction successfully deleted !");
+                              document.querySelector(`[data-transaction-id="${transactionId}"]`).closest('tr').remove();
+                          }).catch((error) => {
+                              console.error("Error removing document: ", error);
+                          });
+                                      }
                               }
                           } else {
                               console.error("Transactions table body not found.");
