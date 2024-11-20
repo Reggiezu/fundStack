@@ -45,8 +45,10 @@
                 <button class="btn btn-secondary me-3">
                   <i class="fas fa-envelope"></i> Email
                 </button>
-                <button class="btn btn-secondary me-3">
-                  <i class="fas fa-print"></i> Print
+                <button class="btn btn-secondary me-3"
+                data-bs-toggle="modal"
+                data-bs-target="#balanceModal">
+                  <i class="fa-solid fa-money-bill-1-wave" id="userBalance"></i> Assign Balance
                 </button>
                 <button class="btn btn-primary"
                 data-bs-toggle="modal"
@@ -63,7 +65,7 @@
           <div class="card shadow-sm mb-3">
             <div class="card-body">
               <h5 class="card-title">Balance</h5>
-              <h6 class="card-subtitle mb-2 text-muted" id="userBalance">$</h6>
+              <h6 class="card-subtitle mb-2 text-muted" id="userBalanceInfoCard">$</h6>
             </div>
           </div>
           <div class="card shadow-sm mb-3">
@@ -180,6 +182,51 @@
     </div>
 
     <!-- Modals -->
+     <!-- Balance Modal -->
+    <div
+    class="modal fade"
+    id="balanceModal"
+    tabindex="-1"
+    aria-labelledby="balanceModalLabel"
+    aria-hidden="true"
+  >
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="balanceModalLabel">Assign Balance</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="balanceForm">
+          <div class="mb-3">
+           <h6>Current balance: </h6> <h6 id="userBalanceModal">$</h6>
+          </div>
+          <p>Category</p>
+          <div class="mb-3">
+              <select class="form-select" aria-label="Default select example" id="categoryDropdownBM" name="category" required>
+              <option value="" disabled selected>Select Category</option>
+            </select>                
+            </div>
+            <div class="mb-3">
+              <label for="balanceAmount" class="form-label">Amount</label>
+              <input
+                type="number"
+                class="form-control"
+                id="balanceAmount"
+                required
+              />
+            </div>
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
       <!-- Account Modal -->
     <div
     class="modal fade"
@@ -364,60 +411,7 @@
       </div>
     </div>
     </div>
-    <!-- Balance Modal -->
-    <div
-      class="modal fade"
-      id="balanceModal"
-      tabindex="-1"
-      aria-labelledby="balanceModalLabel"
-      aria-hidden="true"
-    >
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="balanceModalLabel">Add New Category</h5>
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <form id="transactionForm">
-            <div class="mb-3">
-              <label for="categoryName" class="form-label">Category Name</label>
-              <input
-                type="text"
-                class="form-control"
-                id="transactionDescription"
-                required
-              />
-            </div>
-            <div class="mb-3">
-              <label for="transactionCategory" class="form-label">Account</label>
-              <input
-                type="text"
-                class="form-control"
-                id="transactionCategory"
-                required
-              />
-            </div>
-            <div class="mb-3">
-              <label for="transactionAmount" class="form-label">Amount</label>
-              <input
-                type="number"
-                class="form-control"
-                id="transactionAmount"
-                required
-              />
-            </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-          </form>
-        </div>
-      </div>
-    </div>
-    </div>
+   
     <!-- Delete Confirmation Modal -->
 <div id="deleteTransactionModal" class="modal fade" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
   <div class="modal-dialog">
@@ -438,6 +432,9 @@
       </div>
   </div>
 </div>
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
 
   </div>
   
@@ -458,10 +455,44 @@
                   const userFLname = user.displayName;
                   const welcomeName = document.getElementById("welcome");
                   welcomeName.innerHTML = `Hi, Welcome Back ${userFLname}!`;
-                  const balanceId = document.getElementById("userBalance")
+                  const balanceIdIC = document.getElementById("userBalanceInfoCard");
+                  const balanceModal = document.getElementById('userBalanceModal');
+                  let initialBalance ;
                   fetchFirestoreData(userId);
                   let currentTransactionId = null; // To keep track of the transaction being edited
+                  const amountInput = document.getElementById("balanceAmount");
+                  // Create a new Bootstrap toast instance
+                  function toast({ title, description }) {
+                    // Create the toast element
+                  const toastElement = document.createElement('div');
+                  toastElement.className = 'toast';
+                  toastElement.role = 'alert';
+                  toastElement.setAttribute('aria-live', 'assertive');
+                  toastElement.setAttribute('aria-atomic', 'true');
+
+                  // Construct the toast HTML
+                  toastElement.innerHTML = `
+                      <div class="toast-header">
+                          <strong class="me-auto">${title}</strong>
+                          <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                      </div>
+                      <div class="toast-body">
+                          ${description}
+                      </div>
+                  `;
+
+                  // Append to the toast container
+                  document.getElementById('toastContainer').appendChild(toastElement);
+
+                  // Create and show the toast using Bootstrap's Toast class
+                  const bootstrapToast = new bootstrap.Toast(toastElement);
+                  bootstrapToast.show();
                   
+                  // Optionally, remove the toast element after it hides to keep DOM clean
+                  toastElement.addEventListener('hidden.bs.toast', () => {
+                      toastElement.remove();
+                  });
+              }
 
                   //fetch Info Card data 
                   // Fetch User Info and Update Balance
@@ -471,19 +502,48 @@
                             if (userDoc.exists) {
                                 const userData = userDoc.data();
                                 const balance = userData.balance || 0; // Use 0 as default if balance is null or undefined
-                                
-                                // Set the balance without removing the dollar sign
-                                balanceId.innerHTML = `$${balance}`;
-                            } else {
-                                console.error("User document not found");
-                            }
+                                initialBalance = userData.balance || 0; 
+                                // Set the balance
+                                balanceIdIC.innerHTML = `$${balance}`;
+                                balanceModal.innerHTML = `$${initialBalance}`;
+                            // Only add the event listener after `initialBalance` is set
+                              if (amountInput) {
+                                console.log("Adding event listener to amount input field");
+
+                                  amountInput.addEventListener("input", updateValue);
+                              } else {
+                                  console.error("Amount input element not found");
+                              }
+                          } else {
+                              console.error("User document not found");
+                          }
                         } catch (error) {
                             console.error("Error fetching user document:", error);
                         }
                     }
+                    function updateValue() {
+                    console.log("Update value triggered");
+                    console.log("Initial Balance:", initialBalance);
+                    if (initialBalance !== undefined) {
+                        const amount = parseFloat(amountInput.value) || 0; // Get the amount user has input
+                        const updatedBalance = initialBalance - amount; // Calculate the updated balance
+                        if (updatedBalance<0){
+                          toast({
+                          title: "Insufficient Balance",
+                          description: "Please ensure your balance is sufficient to assign this amount.",
+                      });
+                        }else {
+                        console.log("Updated Balance:", updatedBalance);
+                        balanceModal.innerHTML = `$${updatedBalance}`; // Update the balance display
+                        }
+                    } else {
+                        console.error("Initial balance is not defined yet");
+                    }
+                }
 
                   // Transaction Form Logic
                   const transactionForm = document.getElementById("transactionForm");
+                  const balanceForm = document.getElementById("balanceForm")
                   if (transactionForm) {
                       console.log("Transaction form found:", transactionForm);
                       transactionForm.addEventListener("submit", function (event) {
@@ -535,7 +595,115 @@
                                   });
                                 }
                           })
+                          
+                          // Balance form logic
+if (balanceForm) {
+    console.log("Balance form found:", balanceForm);
+    balanceForm.addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent default form submission
 
+        console.log("Balance form submitted, starting fetch...");
+
+        // Fetch user data first
+        fetchFirestoreData(userId)
+            .then(() => {
+                // Get form values
+                const category = document.getElementById("categoryDropdownBM").value;
+                const amount = parseFloat(document.getElementById("balanceAmount").value);
+
+                console.log("Fetched initial balance:", initialBalance);
+                console.log("Amount to allocate:", amount);
+
+                // Validate balance before proceeding
+                if (initialBalance === undefined) {
+                    console.error("Initial balance is not defined.");
+                    return;
+                }
+
+                if (amount > initialBalance) {
+                    toast({
+                        title: "Insufficient Balance",
+                        description: "Please ensure your balance is sufficient to assign this amount.",
+                    });
+                    return; // Stop here if balance is insufficient
+                }
+
+                if (category && amount) {
+                    console.log("Category and amount are valid, updating Firestore...");
+                    
+                    // Update category and balance in Firestore
+                    db.collection("categories")
+                        .where("userId", "==", userId)
+                        .where("name", "==", category)
+                        .get()
+                        .then((querySnapshot) => {
+                            if (!querySnapshot.empty) {
+                                const categoryDocId = querySnapshot.docs[0].id;
+
+                                // Update the category with the new amount
+                                db.collection("categories").doc(categoryDocId).update({
+                                    amount: firebase.firestore.FieldValue.increment(amount)
+                                })
+                                .then(() => {
+                                    // After category update, update user balance
+                                    db.collection("users").doc(userId).update({
+                                        balance: firebase.firestore.FieldValue.increment(-amount)
+                                    })
+                                    .then(() => {
+                                        alert("Category and balance updated successfully!");
+                                        document.getElementById("balanceModal").querySelector('.btn-close').click();
+                                        location.reload(); // Reload the page to see updated data
+                                    })
+                                    .catch((error) => {
+                                        console.error("Error updating user balance:", error);
+                                    });
+                                })
+                                .catch((error) => {
+                                    console.error("Error updating category:", error);
+                                });
+                            } else {
+                                console.error("Category not found.");
+                            }
+                        })
+                        .catch((error) => {
+                            console.error("Error fetching category:", error);
+                        });
+                } else {
+                    console.error("Category or amount not properly defined.");
+                }
+            })
+            .catch((error) => {
+                console.error("Error fetching user data:", error);
+            });
+    });
+} else {
+    console.error("Balance form not found.");
+}
+
+                        
+                          db.collection("categories")
+                      .where("userId", "==", userId)
+                      .get()
+                      .then((querySnapshot) => {
+                        const categoryDropdowBM = document.getElementById("categoryDropdownBM")
+                              if (querySnapshot.empty) {
+                                  console.log("No categories found for the user.");
+                                  categoryDropdown.innerHTML = "No categories found";
+                              } else {
+                                  querySnapshot.forEach((doc) => {
+                                      const category = doc.data();
+                                      const options = document.createElement("option");
+                                      if (category) {
+                                          options.innerHTML = `
+                                              ${category.name || 'N/A'}
+                                          `;
+                                          categoryDropdowBM.appendChild(options);
+                                      }
+                                  });
+                                }
+                          })
+
+                          // Balance form 
 
 
                                             // Also handle close button specifically in case of a direct click
@@ -565,30 +733,7 @@
                       }
                   }
   
-                  function addTransaction() {
-                      const date = document.getElementById("transactionDate").value;
-                      const description = document.getElementById("transactionDescription").value;
-                      const category = document.getElementById("transactionCategory").value;
-                      const amount = parseFloat(document.getElementById("transactionAmount").value);
-  
-                      if (date && description && category && amount && currentTransactionId === null) {
-                          db.collection("transactions").add({
-                              userId: userId,
-                              date: date,
-                              description: description,
-                              category: category,
-                              amount: amount
-                          })
-                          .then(() => {
-                              alert("New transaction added successfully!");
-                              document.getElementById("transactionModal").querySelector('.btn-close').click();
-                              location.reload(); // Reload page to see updated data
-                          })
-                          .catch((error) => {
-                              console.error("Error adding new transaction:", error);
-                          });
-                      }
-                  }
+                  
   
                   function editTransaction(transactionId) {
                     // Fetch the transaction document from Firestore
@@ -651,20 +796,7 @@
                           const amount = parseFloat(document.getElementById("categoryAmount").value);
                           const categoryType = document.querySelector('input[name="categoryType"]:checked').value;
                           if (category && amount && categoryType) {
-                              db.collection("categories").add({
-                                  userId: userId,
-                                  name: category,
-                                  amount: amount,
-                                  type: categoryType
-                              })
-                              .then(() => {
-                                  alert("New category added successfully!");
-                                  document.getElementById("categoryModal").querySelector('.btn-close').click();
-                                  location.reload(); // Reload page to see updated data
-                              })
-                              .catch((error) => {
-                                  console.error("Error adding new category:", error);
-                              });
+                             
                           }
                       });
                   } else {
