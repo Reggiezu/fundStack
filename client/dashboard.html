@@ -597,36 +597,36 @@
                           })
                           
                           // Balance form logic
-if (balanceForm) {
-    console.log("Balance form found:", balanceForm);
-    balanceForm.addEventListener("submit", function (event) {
-        event.preventDefault(); // Prevent default form submission
+                          if (balanceForm) {
+                              console.log("Balance form found:", balanceForm);
+                              balanceForm.addEventListener("submit", function (event) {
+                                  event.preventDefault(); // Prevent default form submission
 
-        console.log("Balance form submitted, starting fetch...");
+                                  console.log("Balance form submitted, starting fetch...");
 
-        // Fetch user data first
-        fetchFirestoreData(userId)
-            .then(() => {
-                // Get form values
-                const category = document.getElementById("categoryDropdownBM").value;
-                const amount = parseFloat(document.getElementById("balanceAmount").value);
+                                  // Fetch user data first
+                                  fetchFirestoreData(userId)
+                                      .then(() => {
+                                          // Get form values
+                                          const category = document.getElementById("categoryDropdownBM").value;
+                                          const amount = parseFloat(document.getElementById("balanceAmount").value);
 
-                console.log("Fetched initial balance:", initialBalance);
-                console.log("Amount to allocate:", amount);
+                                          console.log("Fetched initial balance:", initialBalance);
+                                          console.log("Amount to allocate:", amount);
 
-                // Validate balance before proceeding
-                if (initialBalance === undefined) {
-                    console.error("Initial balance is not defined.");
-                    return;
-                }
+                                          // Validate balance before proceeding
+                                          if (initialBalance === undefined) {
+                                              console.error("Initial balance is not defined.");
+                                              return;
+                                          }
 
-                if (amount > initialBalance) {
-                    toast({
-                        title: "Insufficient Balance",
-                        description: "Please ensure your balance is sufficient to assign this amount.",
-                    });
-                    return; // Stop here if balance is insufficient
-                }
+                                          if (amount > initialBalance) {
+                                              toast({
+                                                  title: "Insufficient Balance",
+                                                  description: "Please ensure your balance is sufficient to assign this amount.",
+                                              });
+                                              return; // Stop here if balance is insufficient
+                                          }
 
                 if (category && amount) {
                     console.log("Category and amount are valid, updating Firestore...");
@@ -733,7 +733,30 @@ if (balanceForm) {
                       }
                   }
   
-                  
+                  function addTransaction() {
+                      const date = document.getElementById("transactionDate").value;
+                      const description = document.getElementById("transactionDescription").value;
+                      const category = document.getElementById("transactionCategory").value;
+                      const amount = parseFloat(document.getElementById("transactionAmount").value);
+  
+                      if (date && description && category && amount && currentTransactionId === null) {
+                          db.collection("transactions").add({
+                              userId: userId,
+                              date: date,
+                              description: description,
+                              category: category,
+                              amount: amount
+                          })
+                          .then(() => {
+                              alert("New transaction added successfully!");
+                              document.getElementById("transactionModal").querySelector('.btn-close').click();
+                              location.reload(); // Reload page to see updated data
+                          })
+                          .catch((error) => {
+                              console.error("Error adding new transaction:", error);
+                          });
+                      }
+                  }
   
                   function editTransaction(transactionId) {
                     // Fetch the transaction document from Firestore
