@@ -141,9 +141,9 @@
                       email: user.email,
                       username: username,
                       balance: null, // Not yet set
-                      recentTransactions: [], // No transactions yet
+                      recentTransactions: {}, // No transactions yet
                       assignedCategories: {}, // Categories not yet assigned
-                      accounts: [], // No linked accounts yet
+                      accounts: {}, // No linked accounts yet
                     })
                     .then(() => {
                       alert(

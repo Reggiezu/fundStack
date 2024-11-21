@@ -313,6 +313,21 @@
                 <input type="date" class="form-control" id="transactionDate" required />
               </div>
               <div class="mb-3">
+                <p>Transaction Type:</p>
+                <div class="form-check">    
+                  <input class="form-check-input" type="radio" name="transactionType" id="deposit" value="deposit" checked>
+                  <label class="form-check-label" for="flexRadioDefault1">
+                    Deposit
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="transactionType" id="withdraw" checked value="withdraw">
+                  <label class="form-check-label" for="flexRadioDefault2">
+                    Withdrawal
+                  </label>
+                </div>              
+              </div>
+              <div class="mb-3">
                 <label for="transactionDescription" class="form-label">Description</label>
                 <input
                   type="text"
@@ -331,7 +346,7 @@
                 <p>Account:</p>
                 <div class="mb-3">
                   <select class="form-select" aria-label="Default select example" id="accountDropdown" name="account" required>
-                 <option value="" disabled selected>Select Account</option>
+                 <option value="Balance" selected> Account Balance</option>
                   <!-- Account options will be dynamically populated here -->
                 </select>                
               </div>
@@ -469,7 +484,7 @@
                   toastElement.role = 'alert';
                   toastElement.setAttribute('aria-live', 'assertive');
                   toastElement.setAttribute('aria-atomic', 'true');
-
+                  
                   // Construct the toast HTML
                   toastElement.innerHTML = `
                       <div class="toast-header">
@@ -551,128 +566,144 @@
                           handleTransaction();
                       });
                   }
-                  //Transaction Form Accounts and Categories
-                  db.collection("accounts")
-                      .where("userId", "==", userId)
-                      .get()
-                      .then((querySnapshot) => {
-                        const accountDropdown = document.getElementById("accountDropdown")
-                              if (querySnapshot.empty) {
-                                  console.log("No accounts found for the user.");
-                                  accountDropdown.innerHTML = "No accounts found";
-                              } else {
-                                  querySnapshot.forEach((doc) => {
-                                      const account = doc.data();
-                                      const options = document.createElement("option");
-                                      if (account) {
-                                          options.innerHTML = `
-                                              ${account.accountName || 'N/A'}
-                                          `;
-                                          accountDropdown.appendChild(options);
-                                      }
-                                      
-                                  });
-                                }
-                          })
-                          db.collection("categories")
-                      .where("userId", "==", userId)
-                      .get()
-                      .then((querySnapshot) => {
-                        const categoryDropdown = document.getElementById("categoryDropdown")
-                              if (querySnapshot.empty) {
-                                  console.log("No categories found for the user.");
-                                  categoryDropdown.innerHTML = "No categories found";
-                              } else {
-                                  querySnapshot.forEach((doc) => {
-                                      const category = doc.data();
-                                      const options = document.createElement("option");
-                                      if (category) {
-                                          options.innerHTML = `
-                                              ${category.name || 'N/A'}
-                                          `;
-                                          categoryDropdown.appendChild(options);
-                                      }
-                                  });
-                                }
-                          })
+      
+    //Transaction Form Accounts and Categories
+// Directly fetching user document from Firestore
+db.collection("users").doc(userId).get()
+  .then((userDoc) => {
+    if (!userDoc.exists) {
+      console.error("No user document found for the userId:", userId);
+      return;
+    }
+
+    const userData = userDoc.data();
+    if (!userData) {
+      console.error("No user data available or user data is empty.");
+      return;
+    }
+
+    const accountDropdown = document.getElementById("accountDropdown");
+    const categoryDropdown = document.getElementById("categoryDropdown");
+
+    // Populate account dropdown
+    accountDropdown.innerHTML = ""; // Clear any existing options
+    // Add option for Account Balance
+    const balanceOption = document.createElement("option");
+    balanceOption.value = "Balance";
+    balanceOption.textContent = "Account Balance";
+    accountDropdown.appendChild(balanceOption);
+
+    if (userData.accounts) {
+      Object.entries(userData.accounts).forEach(([key, value]) => {
+        const option = document.createElement("option");
+        option.value = key; // This would be the account key, e.g., 'Discover'
+        option.textContent = value.name || key; // Assuming 'name' is a property in each account map
+        accountDropdown.appendChild(option);
+      });
+    } else {
+      console.error("Accounts not found or empty");
+      const noAccountOption = document.createElement("option");
+      noAccountOption.value = "";
+      noAccountOption.textContent = "No accounts found";
+      noAccountOption.disabled = true;
+      accountDropdown.appendChild(noAccountOption);
+    }
+
+    // Populate category dropdown
+    categoryDropdown.innerHTML = ""; // Clear any existing options
+    if (userData.assignedCategories) {
+      Object.entries(userData.assignedCategories).forEach(([key, value]) => {
+        const option = document.createElement("option");
+        option.value = key; // This would be the category key, e.g., 'Groceries'
+        option.textContent = key;
+        categoryDropdown.appendChild(option);
+      });
+    } else {
+      console.error("Categories not found or empty");
+      const noCategoryOption = document.createElement("option");
+      noCategoryOption.value = "";
+      noCategoryOption.textContent = "No categories found";
+      noCategoryOption.disabled = true;
+      categoryDropdown.appendChild(noCategoryOption);
+    }
+  })
+  .catch((error) => {
+    console.error("Error fetching user document for dropdowns:", error);
+  });
+
+
+              
+
+
                           
                           // Balance form logic
-                          if (balanceForm) {
-                              console.log("Balance form found:", balanceForm);
-                              balanceForm.addEventListener("submit", function (event) {
-                                  event.preventDefault(); // Prevent default form submission
+                   // Balance form logic
+if (balanceForm) {
+    console.log("Balance form found:", balanceForm);
+    balanceForm.addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent default form submission
 
-                                  console.log("Balance form submitted, starting fetch...");
+        console.log("Balance form submitted, starting fetch...");
 
-                                  // Fetch user data first
-                                  fetchFirestoreData(userId)
-                                      .then(() => {
-                                          // Get form values
-                                          const category = document.getElementById("categoryDropdownBM").value;
-                                          const amount = parseFloat(document.getElementById("balanceAmount").value);
+        // Fetch user data first
+        fetchFirestoreData(userId)
+            .then((userData) => {
+                // Get form values
+                const category = document.getElementById("categoryDropdownBM").value;
+                const amount = parseFloat(document.getElementById("balanceAmount").value);
 
-                                          console.log("Fetched initial balance:", initialBalance);
-                                          console.log("Amount to allocate:", amount);
+                console.log("Fetched initial balance:", userData.balance);
+                console.log("Amount to allocate:", amount);
 
-                                          // Validate balance before proceeding
-                                          if (initialBalance === undefined) {
-                                              console.error("Initial balance is not defined.");
-                                              return;
-                                          }
+                // Validate balance before proceeding
+                if (userData.balance === undefined) {
+                    console.error("Initial balance is not defined.");
+                    return;
+                }
 
-                                          if (amount > initialBalance) {
-                                              toast({
-                                                  title: "Insufficient Balance",
-                                                  description: "Please ensure your balance is sufficient to assign this amount.",
-                                              });
-                                              return; // Stop here if balance is insufficient
-                                          }
+                if (amount > userData.balance) {
+                    toast({
+                        title: "Insufficient Balance",
+                        description: "Please ensure your balance is sufficient to assign this amount.",
+                    });
+                    return; // Stop here if balance is insufficient
+                }
 
                 if (category && amount) {
                     console.log("Category and amount are valid, updating Firestore...");
-                    
-                    // Update category and balance in Firestore
-                    db.collection("categories")
-                        .where("userId", "==", userId)
-                        .where("name", "==", category)
-                        .get()
-                        .then((querySnapshot) => {
-                            if (!querySnapshot.empty) {
-                                const categoryDocId = querySnapshot.docs[0].id;
 
-                                // Update the category with the new amount
-                                db.collection("categories").doc(categoryDocId).update({
-                                    amount: firebase.firestore.FieldValue.increment(amount)
-                                })
-                                .then(() => {
-                                    // After category update, update user balance
-                                    db.collection("users").doc(userId).update({
-                                        balance: firebase.firestore.FieldValue.increment(-amount)
-                                    })
-                                    .then(() => {
-                                        alert("Category and balance updated successfully!");
-                                        document.getElementById("balanceModal").querySelector('.btn-close').click();
-                                        location.reload(); // Reload the page to see updated data
-                                    })
-                                    .catch((error) => {
-                                        console.error("Error updating user balance:", error);
-                                    });
-                                })
-                                .catch((error) => {
-                                    console.error("Error updating category:", error);
-                                });
-                            } else {
-                                console.error("Category not found.");
-                            }
-                        })
-                        .catch((error) => {
-                            console.error("Error fetching category:", error);
+                    // If the selected category is "Balance", update the user's balance directly
+                    if (category === "Balance") {
+                        db.collection("users").doc(userId).update({
+                            balance: firebase.firestore.FieldValue.increment(-amount)
+                        }).then(() => {
+                            alert("Balance updated successfully!");
+                            document.getElementById("balanceModal").querySelector('.btn-close').click();
+                            location.reload(); // Reload the page to see updated data
+                        }).catch((error) => {
+                            console.error("Error updating user balance:", error);
                         });
+
+                    } else {
+                        // Update category and balance in Firestore
+                        let updatedCategories = userData.assignedCategories;
+                        updatedCategories[category] = (updatedCategories[category] || 0) + amount;
+
+                        db.collection("users").doc(userId).update({
+                            balance: firebase.firestore.FieldValue.increment(-amount),
+                            assignedCategories: updatedCategories
+                        }).then(() => {
+                            alert("Category and balance updated successfully!");
+                            document.getElementById("balanceModal").querySelector('.btn-close').click();
+                            location.reload(); // Reload the page to see updated data
+                        }).catch((error) => {
+                            console.error("Error updating user balance and category:", error);
+                        });
+                    }
                 } else {
                     console.error("Category or amount not properly defined.");
                 }
-            })
-            .catch((error) => {
+            }).catch((error) => {
                 console.error("Error fetching user data:", error);
             });
     });
@@ -680,30 +711,32 @@
     console.error("Balance form not found.");
 }
 
+
+
                         
-                          db.collection("categories")
-                      .where("userId", "==", userId)
-                      .get()
-                      .then((querySnapshot) => {
-                        const categoryDropdowBM = document.getElementById("categoryDropdownBM")
-                              if (querySnapshot.empty) {
-                                  console.log("No categories found for the user.");
-                                  categoryDropdown.innerHTML = "No categories found";
-                              } else {
-                                  querySnapshot.forEach((doc) => {
-                                      const category = doc.data();
-                                      const options = document.createElement("option");
-                                      if (category) {
-                                          options.innerHTML = `
-                                              ${category.name || 'N/A'}
-                                          `;
-                                          categoryDropdowBM.appendChild(options);
+                                                      // Populate the dropdowns with available categories and accounts
+                              db.collection("categories").where("userId", "==", userId).get()
+                                  .then((querySnapshot) => {
+                                      const categoryDropdownBM = document.getElementById("categoryDropdownBM");
+                                      if (querySnapshot.empty) {
+                                          console.log("No categories found for the user.");
+                                          categoryDropdownBM.innerHTML = "No categories found";
+                                      } else {
+                                          querySnapshot.forEach((doc) => {
+                                              const category = doc.data();
+                                              const option = document.createElement("option");
+                                              if (category) {
+                                                  option.textContent = `${category.name || 'N/A'}`;
+                                                  option.value = category.name;
+                                                  categoryDropdownBM.appendChild(option);
+                                              }
+                                          });
                                       }
                                   });
-                                }
-                          })
 
-                          // Balance form 
+                                 
+
+
 
 
                                             // Also handle close button specifically in case of a direct click
@@ -735,97 +768,282 @@
                   
   
                   function addTransaction() {
-                      const date = document.getElementById("transactionDate").value;
-                      const description = document.getElementById("transactionDescription").value;
-                      const category = document.getElementById("transactionCategory").value;
-                      const amount = parseFloat(document.getElementById("transactionAmount").value);
-  
-                      if (date && description && category && amount && currentTransactionId === null) {
-                          db.collection("transactions").add({
-                              userId: userId,
-                              date: date,
-                              description: description,
-                              category: category,
-                              amount: amount
-                          })
-                          .then(() => {
-                              alert("New transaction added successfully!");
-                              document.getElementById("transactionModal").querySelector('.btn-close').click();
-                              location.reload(); // Reload page to see updated data
-                          })
-                          .catch((error) => {
-                              console.error("Error adding new transaction:", error);
-                          });
-                      }
-                  }
-  
-                  function editTransaction(transactionId) {
-                    // Fetch the transaction document from Firestore
+  const date = document.getElementById("transactionDate").value;
+  const description = document.getElementById("transactionDescription").value;
+  const categoryName = document.getElementById("categoryDropdown").value;
+  const accountId = document.getElementById("accountDropdown").value;
+  let amount = parseFloat(document.getElementById("transactionAmount").value);
+  const transactionType = document.querySelector('input[name="transactionType"]:checked').value;
+
+  if (transactionType === "withdraw") {
+    amount = -amount; // Make it negative for withdrawal
+  }
+
+  if (date && description && categoryName && accountId && amount) {
+    // Add the transaction to the transactions collection
+    db.collection("transactions").add({
+      userId: userId,
+      date: date,
+      description: description,
+      category: categoryName,
+      accountId: accountId,
+      amount: amount
+    }).then((docRef) => {
+      console.log("Transaction added successfully:", docRef.id);
+
+      // Update the user's account balance and/or category amount based on selected account
+      db.collection("users").doc(userId).get().then((userDoc) => {
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          
+          // Prepare updates for user document
+          let updatedAccounts = userData.accounts;
+          let updatedCategories = userData.assignedCategories;
+          let balanceUpdate = null;
+
+          if (accountId === "Balance") {
+            // Update general user balance
+            balanceUpdate = userData.balance + amount;
+
+          } else {
+            // Update specific account balance
+            updatedAccounts = {
+              ...updatedAccounts,
+              [accountId]: {
+                ...updatedAccounts[accountId],
+                balance: (updatedAccounts[accountId]?.balance || 0) + amount
+              }
+            };
+          }
+
+          // Update Category Amount if it's not 'Balance'
+          if (categoryName !== "Balance") {
+            updatedCategories = {
+              ...updatedCategories,
+              [categoryName]: {
+                ...updatedCategories[categoryName],
+                amount: (updatedCategories[categoryName]?.amount || 0) + amount
+              }
+            };
+          }
+
+          // Create a payload object for the fields to update
+          let updatePayload = {
+            accounts: updatedAccounts,
+            assignedCategories: updatedCategories,
+          };
+
+          // Only add balance to updatePayload if it's modified
+          if (balanceUpdate !== null) {
+            updatePayload.balance = balanceUpdate;
+          }
+
+          // Update user document with new account and category data
+          db.collection("users").doc(userId).update(updatePayload)
+          .then(() => {
+            console.log("User's accounts, categories, and balance updated successfully");
+            alert("Transaction and user data updated!");
+            location.reload();
+          }).catch((error) => {
+            console.error("Error updating user document:", error);
+          });
+        } else {
+          console.error("User document not found");
+        }
+      }).catch((error) => {
+        console.error("Error fetching user document:", error);
+      });
+    }).catch((error) => {
+      console.error("Error adding transaction:", error);
+    });
+  }
+}
+
+
+function editTransaction(transactionId) {
+  // Fetch the transaction document from Firestore
   firebase.firestore().collection("transactions").doc(transactionId).get()
     .then((doc) => {
       if (doc.exists) {
         const transaction = doc.data();
         
-        
         // Populate the modal fields with transaction data
         document.getElementById("transactionDate").value = transaction.date;
-        document.getElementById("transactionModalLabel").innerHTML= "Edit Transaction"
+        document.getElementById("transactionModalLabel").innerHTML = "Edit Transaction";
         document.getElementById("transactionDescription").value = transaction.description;
-        document.getElementById("transactionCategory").value = transaction.category;
-        document.getElementById("transactionAmount").value = transaction.amount;
+        document.getElementById("categoryDropdown").value = transaction.category;
+        document.getElementById("transactionAmount").value = Math.abs(transaction.amount);
+        document.getElementById("accountDropdown").value = transaction.accountId;
+        
+        // Determine if it was an inflow or outflow to reverse appropriately
+        const transactionType = transaction.amount < 0 ? "withdraw" : "deposit";
+        document.querySelector(`input[name="transactionType"][value="${transactionType}"]`).checked = true;
 
-       
-  
-                                          // Show the transactionModal modal
-                                          const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'), {});
-                                          transactionModal.show();
-                                          document.getElementById('transactionModal').addEventListener('submit', function(event) {
-                                            event.preventDefault();                                  
+        // Show the transactionModal modal
+        const transactionModal = new bootstrap.Modal(document.getElementById('transactionModal'), {});
+        transactionModal.show();
 
-         // Grab edited data 
-                      const date = document.getElementById("transactionDate").value;
-                      const description = document.getElementById("transactionDescription").value;
-                      const category = document.getElementById("transactionCategory").value;
-                      const amount = parseFloat(document.getElementById("transactionAmount").value);
+        document.getElementById('transactionForm').addEventListener('submit', function (event) {
+          event.preventDefault();
 
-                      if (date && description && category && amount && currentTransactionId != null) {
-                          db.collection("transactions").doc(transactionId).update({
-                              date: date,
-                              description: description,
-                              category: category,
-                              amount: amount
-                          })
-                          .then(() => {
-                              alert("Transaction successfully edited!");
-                              currentTransactionId = null; // Reset the flag
-                              document.getElementById("transactionModal").querySelector('.btn-close').click();
-                              location.reload(); // Reload page to see updated data
-                          })
-                          .catch((error) => {
-                              console.error("Error updating transaction:", error);
-                          });
+          // Grab edited data
+          const date = document.getElementById("transactionDate").value;
+          const description = document.getElementById("transactionDescription").value;
+          const category = document.getElementById("categoryDropdown").value;
+          const accountId = document.getElementById("accountDropdown").value;
+          let amount = parseFloat(document.getElementById("transactionAmount").value);
+          const updatedTransactionType = document.querySelector('input[name="transactionType"]:checked').value;
+
+          // Determine if it is an inflow or outflow
+          if (updatedTransactionType === "withdraw") {
+            amount = -amount;
+          }
+
+          // Reverse the original transaction effect
+          db.collection("users").doc(userId).get().then((userDoc) => {
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+
+              let balanceUpdate = null;
+              let updatedAccounts = userData.accounts;
+              let updatedCategories = userData.assignedCategories;
+
+              if (transaction.accountId === "Balance") {
+                balanceUpdate = userData.balance - transaction.amount; // Reverse the original amount
+              } else {
+                // Reverse from specific account
+                updatedAccounts = updatedAccounts.map(account => {
+                  if (account.accountId === transaction.accountId) {
+                    return {
+                      ...account,
+                      balance: account.balance - transaction.amount
+                    };
+                  }
+                  return account;
+                });
+              }
+
+              // Reverse the category amount if it's not 'Balance'
+              if (transaction.category !== "Balance") {
+                updatedCategories = {
+                  ...updatedCategories,
+                  [transaction.category]: {
+                    ...updatedCategories[transaction.category],
+                    amount: (updatedCategories[transaction.category]?.amount || 0) - transaction.amount
+                  }
+                };
+              }
+
+              // Apply updates to user document
+              let updatePayload = {
+                accounts: updatedAccounts,
+                assignedCategories: updatedCategories
+              };
+
+              if (balanceUpdate !== null) {
+                updatePayload.balance = balanceUpdate;
+              }
+
+              // Update with reversed effect
+              db.collection("users").doc(userId).update(updatePayload).then(() => {
+
+                // Proceed to update the transaction
+                db.collection("transactions").doc(transactionId).update({
+                  date: date,
+                  description: description,
+                  category: category,
+                  accountId: accountId,
+                  amount: amount
+                }).then(() => {
+                  // Apply new effect (similar to addTransaction)
+                  let newBalanceUpdate = null;
+
+                  if (accountId === "Balance") {
+                    newBalanceUpdate = userData.balance + amount;
+                  } else {
+                    updatedAccounts = updatedAccounts.map(account => {
+                      if (account.accountId === accountId) {
+                        return {
+                          ...account,
+                          balance: account.balance + amount
+                        };
                       }
-                  })}})};
-  
+                      return account;
+                    });
+                  }
+
+                  if (category !== "Balance") {
+                    updatedCategories = {
+                      ...updatedCategories,
+                      [category]: {
+                        ...updatedCategories[category],
+                        amount: (updatedCategories[category]?.amount || 0) + amount
+                      }
+                    };
+                  }
+
+                  // Apply the new effect to user document
+                  let newUpdatePayload = {
+                    accounts: updatedAccounts,
+                    assignedCategories: updatedCategories
+                  };
+
+                  if (newBalanceUpdate !== null) {
+                    newUpdatePayload.balance = newBalanceUpdate;
+                  }
+
+                  db.collection("users").doc(userId).update(newUpdatePayload).then(() => {
+                    alert("Transaction successfully edited!");
+                    currentTransactionId = null; // Reset the flag
+                    document.getElementById("transactionModal").querySelector('.btn-close').click();
+                    location.reload(); // Reload page to see updated data
+                  }).catch((error) => {
+                    console.error("Error updating user document after editing transaction:", error);
+                  });
+                }).catch((error) => {
+                  console.error("Error updating transaction:", error);
+                });
+
+              }).catch((error) => {
+                console.error("Error reversing user balance:", error);
+              });
+            }
+          });
+        });
+      }
+    });
+}
+
                   
   
-                  // Category Form Logic
-                  const categoryForm = document.getElementById("categoryForm");
-                  if (categoryForm) {
-                      console.log("category form found:", categoryForm);
-                      categoryForm.addEventListener("submit", function (event) {
-                          event.preventDefault();
-  
-                          const category = document.getElementById("categoryName").value;
-                          const amount = parseFloat(document.getElementById("categoryAmount").value);
-                          const categoryType = document.querySelector('input[name="categoryType"]:checked').value;
-                          if (category && amount && categoryType) {
-                             
-                          }
-                      });
-                  } else {
-                      console.error("category form not found.");
-                  }
+               // Updated Category Form Logic
+const categoryForm = document.getElementById("categoryForm");
+if (categoryForm) {
+    console.log("Category form found:", categoryForm);
+    categoryForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const categoryName = document.getElementById("categoryName").value;
+        if (categoryName) {
+            // Update user's document with new category info
+            db.collection("users").doc(userId).update({
+                [`assignedCategories.${categoryName}`]: {
+                    name: categoryName,
+                    amount: 0 // Initial amount set to 0
+                }
+            }).then(() => {
+                alert("New category added successfully!");
+                // Close modal and reload page
+                document.getElementById("categoryModal").querySelector('.btn-close').click();
+                location.reload();
+            }).catch((error) => {
+                console.error("Error updating user document with new category:", error);
+            });
+        }
+    });
+} else {
+    console.error("Category form not found.");
+}
   
                   // Fetch Transactions
                   db.collection("transactions")
@@ -918,109 +1136,125 @@
                       });
                       
                       
-                                          // Account form logic
-                              accountForm.addEventListener("submit", function(event) {
-                              event.preventDefault(); // Corrected the preventDefault method
+// Updated Account Form Logic
+const accountForm = document.getElementById("accountForm");
+if (accountForm) {
+    console.log("Account form found:", accountForm);
+    // Account Form Logic for Adding New Account
+accountForm.addEventListener("submit", function (event) {
+  event.preventDefault(); // Prevent default form submission
 
-                              const account = document.getElementById("accountName").value;
-                              const balance = parseFloat(document.getElementById("accountBalance").value); // Corrected the ID for balance
-                              const accountType = document.querySelector('input[name="accountType"]:checked').value;
+  const accountName = document.getElementById("accountName").value;
+  const balance = parseFloat(document.getElementById("accountBalance").value);
+  const accountType = document.querySelector('input[name="accountType"]:checked').value;
 
-                              if (account && balance && accountType) {
-                                db.collection("accounts").add({
-                                  userId: userId,
-                                  accountName: account,
-                                  balance: balance,
-                                  accountType: accountType
-                                })
-                                .then((docRef) => {
-                                  if (docRef.id) {
-                                    console.log("Transaction ID:", docRef.id);
-                                    // Update user's document with new account info
-                                    db.collection("users").doc(userId).update({
-                                      accounts: firebase.firestore.FieldValue.arrayUnion(docRef.id),
-                                      balance: firebase.firestore.FieldValue.increment(balance)
-                                    })
-                                    .then(() => {
-                                      console.log("Account form submitted");
-                                      console.log("Account successfully added, docRef:", docRef);
-                                      console.log("Looking for:", docRef.id);
-                                      console.log("Looking for:",  db.collection("users").doc(userId));
-                                      console.log("Updating user with new account...");
+  if (accountName && balance && accountType) {
+    // Add the new account to the accounts collection and get the document ID
+    db.collection("accounts").add({
+      userId: userId,
+      name: accountName,
+      balance: balance,
+      type: accountType
+    }).then((docRef) => {
+      const accountId = docRef.id; // Get the newly generated account ID
 
-                                      alert("New account added successfully!");
-                                      // Close modal and reload page
-                                      document.getElementById("accountModal").querySelector('.btn-close').click();
-                                      location.reload();
-                                    })
-                                    .catch((error) => {
-                                      console.error("Error updating user document:", error);
-                                    });
-                                  }
-                                })
-                                .catch((error) => {
-                                  console.error("Error adding new account:", error); // Corrected the error message
-                                });
-                              }
-});
+      // Update the user's document with the new account information
+      db.collection("users").doc(userId).get().then((userDoc) => {
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          const updatedAccounts = {
+            ...userData.accounts,
+            [accountId]: {
+              accountId: accountId,
+              name: accountName,
+              balance: balance,
+              type: accountType
+            }
+          };
+         
 
+          // Update the user document with the new account map
+          db.collection("users").doc(userId).update({
+            accounts: updatedAccounts,
+            balance: firebase.firestore.FieldValue.increment(balance) // Use increment for safe atomic update
+          }).then(() => {
+            alert("New account added successfully!");
+            // Close modal and reload the page to see updated data
+            document.getElementById("accountModal").querySelector('.btn-close').click();
+            location.reload();
+          }).catch((error) => {
+            console.error("Error updating user document with new account:", error);
+          });
+        } else {
+          console.error("User document not found");
+        }
+      }).catch((error) => {
+        console.error("Error fetching user document for account update:", error);
+      });
+    }).catch((error) => {
+      console.error("Error adding new account:", error);
+    });
+  } else {
+    console.error("Account form inputs are not valid.");
+}})};
 
                                             
-                  // category Pie Chart Section
-                  const ctx = document.getElementById("categoryChart")?.getContext("2d");
-  
-                  if (ctx) {
-                      db.collection("categories").where("userId", "==", userId)
-                          .get()
-                          .then((querySnapshot) => {
-                              const categoryData = [];
-                              const categoryLabels = [];
-  
-                              querySnapshot.forEach((doc) => {
-                                  const category = doc.data();
-                                  categoryLabels.push(category.category);
-                                  categoryData.push(category.amount);
-                              });
-  
-                              new Chart(ctx, {
-                                  type: "pie",
-                                  data: {
-                                      labels: categoryLabels,
-                                      datasets: [{
-                                          data: categoryData,
-                                          backgroundColor: [
-                                              "#b91d47",
-                                              "#00aba9",
-                                              "#2b5797",
-                                              "#e8c3b9",
-                                              "#1e7145"
-                                          ],
-                                      }]
-                                  },
-                                  options: {
-                                      responsive: true,
-                                      plugins: {
-                                          legend: {
-                                              position: 'top',
-                                          },
-                                          title: {
-                                              display: true,
-                                              text: 'category Overview by Category'
-                                          }
-                                      }
-                                  }
-                              });
-                          })
-                          .catch((error) => {
-                              console.error("Error fetching category data:", error);
-                          });
-                  } else {
-                      console.error("category chart context not found.");
-                  }
-              } else {
-                  console.log("No user is signed in, redirecting to login page.");
-                  window.location.href = "signin.html";
+                  // Category Pie Chart Section
+const ctx = document.getElementById("categoryChart")?.getContext("2d");
+
+if (ctx) {
+  db.collection("users").doc(userId).get()
+    .then((userDoc) => {
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        const categoryData = [];
+        const categoryLabels = [];
+
+        if (userData.assignedCategories) {
+          for (let [category, categoryInfo] of Object.entries(userData.assignedCategories)) {
+            categoryLabels.push(category);
+            categoryData.push(categoryInfo.amount || 0);
+          }
+        }
+
+        new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: categoryLabels,
+            datasets: [{
+              data: categoryData,
+              backgroundColor: [
+                "#b91d47",
+                "#00aba9",
+                "#2b5797",
+                "#e8c3b9",
+                "#1e7145"
+              ],
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: 'top',
+              },
+              title: {
+                display: true,
+                text: 'Category Overview by Category'
               }
+            }
+          }
+        });
+      } else {
+        console.error("User document not found");
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching user data:", error);
+    });
+} else {
+  console.error("Category chart context not found.");
+}}
           });
       });
   </script>
