@@ -71,19 +71,19 @@
           <div class="card shadow-sm mb-3">
             <div class="card-body">
               <h5 class="card-title">Total Expenses</h5>
-              <h6 class="card-subtitle mb-2 text-muted">$4,567</h6>
+              <h6 class="card-subtitle mb-2 text-muted" id="expenseInfoCard">$4,567</h6>
             </div>
           </div>
           <div class="card shadow-sm mb-3">
             <div class="card-body">
               <h5 class="card-title">Savings</h5>
-              <h6 class="card-subtitle mb-2 text-muted">$3,000</h6>
+              <h6 class="card-subtitle mb-2 text-muted" id="savingInfoCard">$3,000</h6>
             </div>
           </div>
           <div class="card shadow-sm">
             <div class="card-body">
-              <h5 class="card-title">Budget</h5>
-              <h6 class="card-subtitle mb-2 text-muted">$5,000</h6>
+              <h5 class="card-title">Highest Expense Amount</h5>
+              <h6 class="card-subtitle mb-2 text-muted" id="highestExpenseCategoryInfoCard">category</h6>
             </div>
           </div>
         </div>
@@ -476,6 +476,9 @@
                   fetchFirestoreData(userId);
                   let currentTransactionId = null; // To keep track of the transaction being edited
                   const amountInput = document.getElementById("balanceAmount");
+                  const savingInfoCard = document.getElementById("savingInfoCard");
+                  const highestExpenseCategoryInfoCard = document.getElementById("highestExpenseCategoryInfoCard");
+                  const expenseInfoCard = document.getElementById("expenseInfoCard");
                   // Create a new Bootstrap toast instance
                   function toast({ title, description }) {
                     // Create the toast element
@@ -495,7 +498,7 @@
                           ${description}
                       </div>
                   `;
-
+                
                   // Append to the toast container
                   document.getElementById('toastContainer').appendChild(toastElement);
 
@@ -509,7 +512,8 @@
                   });
               }
 
-                  //fetch Info Card data 
+
+
                   // Fetch User Info and Update Balance
                     async function fetchFirestoreData(userId) {
                         try {
@@ -555,6 +559,68 @@
                         console.error("Initial balance is not defined yet");
                     }
                 }
+ // Calculate and update Total Expenses and Savings
+let totalExpenses = 0;
+let totalSavings = 0;
+let highestExpenseCategory = { name: '', amount: Number.NEGATIVE_INFINITY };
+
+db.collection("users").doc(userId).get()
+  .then((userDoc) => {
+    if (!userDoc.exists) {
+      console.error("No user document found for the userId:", userId);
+      return;
+    }
+
+    const userData = userDoc.data();
+    if (!userData) {
+      console.error("No user data available or user data is empty.");
+      return;
+    }
+
+    console.log("Assigned Categories:", userData.assignedCategories); // Debugging log
+
+    if (userData.assignedCategories) {
+      Object.entries(userData.assignedCategories).forEach(([categoryName, categoryData]) => {
+        // Handle old and new category structures
+        if (categoryData.type === "expense") {
+          // For new categories, use totalExpense if available, otherwise use amount
+          const expenseAmount = categoryData.totalExpense || categoryData.amount || 0;
+          totalExpenses += expenseAmount;
+
+          // Check if this is the highest expense category
+          if (expenseAmount > highestExpenseCategory.amount) {
+            highestExpenseCategory = { name: categoryName, amount: expenseAmount };
+          }
+        } else if (categoryData.type === "saving") {
+          // For savings, accumulate assignedBudget or amount (handle both old and new)
+          const savingAmount = categoryData.assignedBudget || categoryData.amount || 0;
+          totalSavings += savingAmount;
+        }
+      });
+    }
+
+    // Update Total Expenses Card
+    expenseInfoCard.textContent = `$${Math.abs(totalExpenses)}`;
+
+    // Update Total Savings Card
+    savingInfoCard.textContent = `$${totalSavings}`;
+
+    // Update Highest Expense Category Card
+    if (highestExpenseCategory.name) {
+      highestExpenseCategoryInfoCard.textContent = `${highestExpenseCategory.name}: $${Math.abs(highestExpenseCategory.amount)}`;
+    } else {
+      highestExpenseCategoryInfoCard.textContent = "No expenses found";
+    }
+  })
+  .catch((error) => {
+    console.error("Error fetching user document for dropdowns:", error);
+  });
+
+// Debugging Logs
+console.log("Total Expenses:", totalExpenses);
+console.log("Total Savings:", totalSavings);
+console.log("Highest Expense Category:", highestExpenseCategory);
+
 
                   // Transaction Form Logic
                   const transactionForm = document.getElementById("transactionForm");
@@ -646,8 +712,18 @@ if (balanceForm) {
         console.log("Balance form submitted, starting fetch...");
 
         // Fetch user data first
-        fetchFirestoreData(userId)
-            .then((userData) => {
+        db.collection("users").doc(userId).get()
+  .then((userDoc) => {
+    if (!userDoc.exists) {
+      console.error("No user document found for the userId:", userId);
+      return;
+    }
+
+    const userData = userDoc.data();
+    if (!userData) {
+      console.error("No user data available or user data is empty.");
+      return;
+    }
                 // Get form values
                 const category = document.getElementById("categoryDropdownBM").value;
                 const amount = parseFloat(document.getElementById("balanceAmount").value);
@@ -660,7 +736,6 @@ if (balanceForm) {
                     console.error("Initial balance is not defined.");
                     return;
                 }
-
                 if (amount > userData.balance) {
                     toast({
                         title: "Insufficient Balance",
@@ -669,7 +744,7 @@ if (balanceForm) {
                     return; // Stop here if balance is insufficient
                 }
 
-                if (category && amount) {
+                if (category) {
                     console.log("Category and amount are valid, updating Firestore...");
 
                     // If the selected category is "Balance", update the user's balance directly
@@ -677,8 +752,9 @@ if (balanceForm) {
                         db.collection("users").doc(userId).update({
                             balance: firebase.firestore.FieldValue.increment(-amount)
                         }).then(() => {
+                            console.log("Balance updated successfully");
                             alert("Balance updated successfully!");
-                            document.getElementById("balanceModal").querySelector('.btn-close').click();
+                            document.getElementById("balanceModal").querySelector(".btn-close").click();
                             location.reload(); // Reload the page to see updated data
                         }).catch((error) => {
                             console.error("Error updating user balance:", error);
@@ -686,15 +762,19 @@ if (balanceForm) {
 
                     } else {
                         // Update category and balance in Firestore
-                        let updatedCategories = userData.assignedCategories;
-                        updatedCategories[category] = (updatedCategories[category] || 0) + amount;
+                        let updatedCategories = { ...userData.assignedCategories };
+                        updatedCategories[category] = {
+                            ...updatedCategories[category],
+                            assignedBudget: (updatedCategories[category]?.assignedBudget || 0) + amount,
+                        };
 
                         db.collection("users").doc(userId).update({
                             balance: firebase.firestore.FieldValue.increment(-amount),
                             assignedCategories: updatedCategories
                         }).then(() => {
+                            console.log("Category and balance updated successfully");
                             alert("Category and balance updated successfully!");
-                            document.getElementById("balanceModal").querySelector('.btn-close').click();
+                            document.getElementById("balanceModal").querySelector(".btn-close").click();
                             location.reload(); // Reload the page to see updated data
                         }).catch((error) => {
                             console.error("Error updating user balance and category:", error);
@@ -714,25 +794,34 @@ if (balanceForm) {
 
 
                         
-                                                      // Populate the dropdowns with available categories and accounts
-                              db.collection("categories").where("userId", "==", userId).get()
-                                  .then((querySnapshot) => {
-                                      const categoryDropdownBM = document.getElementById("categoryDropdownBM");
-                                      if (querySnapshot.empty) {
-                                          console.log("No categories found for the user.");
-                                          categoryDropdownBM.innerHTML = "No categories found";
-                                      } else {
-                                          querySnapshot.forEach((doc) => {
-                                              const category = doc.data();
-                                              const option = document.createElement("option");
-                                              if (category) {
-                                                  option.textContent = `${category.name || 'N/A'}`;
-                                                  option.value = category.name;
-                                                  categoryDropdownBM.appendChild(option);
-                                              }
-                                          });
-                                      }
-                                  });
+                             // Populate the dropdowns with available categories and accounts
+                            db.collection("users").doc(userId).get()
+                              .then((userDoc) => {
+                                if (userDoc.exists) {
+                                  const userData = userDoc.data();
+                                  const categoryDropdownBM = document.getElementById("categoryDropdownBM");
+                                  if (userData && userData.assignedCategories) {
+                                    Object.entries(userData.assignedCategories).forEach(([key, value]) => {
+                                      const option = document.createElement("option");
+                                      option.value = key; // This would be the category key, e.g., 'Groceries'
+                                      option.textContent = key;
+                                      categoryDropdownBM.appendChild(option);
+                                    });
+                                  } else {
+                                    console.error("Categories not found or empty");
+                                    const noCategoryOption = document.createElement("option");
+                                    noCategoryOption.value = "";
+                                    noCategoryOption.textContent = "No categories found";
+                                    noCategoryOption.disabled = true;
+                                    categoryDropdownBM.appendChild(noCategoryOption);
+                                  }
+                                } else {
+                                  console.error("User document not found");
+                                }
+                              })
+                              .catch((error) => {
+                                console.error("Error fetching user document for dropdowns:", error);
+                              });
 
                                  
 
@@ -787,75 +876,64 @@ if (balanceForm) {
       description: description,
       category: categoryName,
       accountId: accountId,
-      amount: amount
-    }).then((docRef) => {
-      console.log("Transaction added successfully:", docRef.id);
+      amount: amount,
+    })
+      .then((docRef) => {
+        console.log("Transaction added successfully:", docRef.id);
 
-      // Update the user's account balance and/or category amount based on selected account
-      db.collection("users").doc(userId).get().then((userDoc) => {
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          
-          // Prepare updates for user document
-          let updatedAccounts = userData.accounts;
-          let updatedCategories = userData.assignedCategories;
-          let balanceUpdate = null;
+        // Update user document with new transaction effects
+        db.collection("users").doc(userId).get().then((userDoc) => {
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            let updatePayload = {};
+            let updatedCategories = { ...userData.assignedCategories };
 
-          if (accountId === "Balance") {
-            // Update general user balance
-            balanceUpdate = userData.balance + amount;
+            if (accountId === "Balance") {
+              // Update user balance only
+              updatePayload.balance = firebase.firestore.FieldValue.increment(amount);
+            } else {
+              // Update specific account balance
+              updatePayload[`accounts.${accountId}.balance`] = firebase.firestore.FieldValue.increment(amount);
+            }
 
+            if (categoryName !== "Balance") {
+              // Update assigned categories for savings or expenses
+              const category = updatedCategories[categoryName] || {
+                assignedBudget: 0,
+                totalExpense: 0,
+                type: transactionType === "deposit" ? "saving" : "expense",
+              };
+
+              if (transactionType === "deposit") {
+                category.assignedBudget += Math.abs(amount);
+                updatePayload.totalSavings = firebase.firestore.FieldValue.increment(Math.abs(amount));
+              } else {
+                category.totalExpense += Math.abs(amount);
+                updatePayload.totalExpenses = firebase.firestore.FieldValue.increment(Math.abs(amount));
+              }
+
+              updatedCategories[categoryName] = category;
+              updatePayload.assignedCategories = updatedCategories;
+            }
+
+            // Update user document with the new data
+            db.collection("users").doc(userId).update(updatePayload).then(() => {
+              console.log("User's accounts, categories, and balance updated successfully");
+              alert("Transaction and user data updated!");
+              location.reload();
+            }).catch((error) => {
+              console.error("Error updating user document:", error);
+            });
           } else {
-            // Update specific account balance
-            updatedAccounts = {
-              ...updatedAccounts,
-              [accountId]: {
-                ...updatedAccounts[accountId],
-                balance: (updatedAccounts[accountId]?.balance || 0) + amount
-              }
-            };
+            console.error("User document not found");
           }
-
-          // Update Category Amount if it's not 'Balance'
-          if (categoryName !== "Balance") {
-            updatedCategories = {
-              ...updatedCategories,
-              [categoryName]: {
-                ...updatedCategories[categoryName],
-                amount: (updatedCategories[categoryName]?.amount || 0) + amount
-              }
-            };
-          }
-
-          // Create a payload object for the fields to update
-          let updatePayload = {
-            accounts: updatedAccounts,
-            assignedCategories: updatedCategories,
-          };
-
-          // Only add balance to updatePayload if it's modified
-          if (balanceUpdate !== null) {
-            updatePayload.balance = balanceUpdate;
-          }
-
-          // Update user document with new account and category data
-          db.collection("users").doc(userId).update(updatePayload)
-          .then(() => {
-            console.log("User's accounts, categories, and balance updated successfully");
-            alert("Transaction and user data updated!");
-            location.reload();
-          }).catch((error) => {
-            console.error("Error updating user document:", error);
-          });
-        } else {
-          console.error("User document not found");
-        }
-      }).catch((error) => {
-        console.error("Error fetching user document:", error);
+        }).catch((error) => {
+          console.error("Error fetching user document:", error);
+        });
+      })
+      .catch((error) => {
+        console.error("Error adding transaction:", error);
       });
-    }).catch((error) => {
-      console.error("Error adding transaction:", error);
-    });
   }
 }
 
@@ -1024,21 +1102,21 @@ if (categoryForm) {
         event.preventDefault();
 
         const categoryName = document.getElementById("categoryName").value;
+        const categoryType = document.querySelector('input[name="categoryType"]:checked').value;
         if (categoryName) {
             // Update user's document with new category info
-            db.collection("users").doc(userId).update({
-                [`assignedCategories.${categoryName}`]: {
-                    name: categoryName,
-                    amount: 0 // Initial amount set to 0
-                }
-            }).then(() => {
-                alert("New category added successfully!");
-                // Close modal and reload page
-                document.getElementById("categoryModal").querySelector('.btn-close').click();
-                location.reload();
-            }).catch((error) => {
-                console.error("Error updating user document with new category:", error);
-            });
+                    db.collection("users").doc(userId).update({
+          [`assignedCategories.${categoryName}`]: {
+            assignedBudget: 0, // Initial budget
+            totalExpense: 0,   // Initial total expense
+            type: categoryType // "expense" or "saving"
+          }
+        }).then(() => {
+          console.log("New category added to user document successfully");
+        }).catch((error) => {
+          console.error("Error adding new category to user document:", error);
+        });
+
         }
     });
 } else {
@@ -1160,43 +1238,37 @@ accountForm.addEventListener("submit", function (event) {
 
       // Update the user's document with the new account information
       db.collection("users").doc(userId).get().then((userDoc) => {
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          const updatedAccounts = {
-            ...userData.accounts,
-            [accountId]: {
-              accountId: accountId,
-              name: accountName,
-              balance: balance,
-              type: accountType
-            }
-          };
-         
+  if (userDoc.exists) {
+    const userData = userDoc.data();
+    const updatedAccounts = {
+      ...userData.accounts,
+      [accountId]: {
+        accountId: accountId,
+        name: accountName,
+        balance: balance,
+        type: accountType,
+      },
+    };
 
-          // Update the user document with the new account map
-          db.collection("users").doc(userId).update({
-            accounts: updatedAccounts,
-            balance: firebase.firestore.FieldValue.increment(balance) // Use increment for safe atomic update
-          }).then(() => {
-            alert("New account added successfully!");
-            // Close modal and reload the page to see updated data
-            document.getElementById("accountModal").querySelector('.btn-close').click();
-            location.reload();
-          }).catch((error) => {
-            console.error("Error updating user document with new account:", error);
-          });
-        } else {
-          console.error("User document not found");
-        }
-      }).catch((error) => {
-        console.error("Error fetching user document for account update:", error);
-      });
+    const newBalance = userData.balance + balance;
+
+    // Update the user document with the new account and balance
+    db.collection("users").doc(userId).update({
+      accounts: updatedAccounts,
+      balance: newBalance,
+    }).then(() => {
+      console.log("Account added and user balance updated successfully");
+      alert("New account added successfully!");
+      document.getElementById("accountModal").querySelector(".btn-close").click();
+      location.reload();
     }).catch((error) => {
-      console.error("Error adding new account:", error);
+      console.error("Error updating user document with new account:", error);
     });
-  } else {
-    console.error("Account form inputs are not valid.");
-}})};
+  }
+}).catch((error) => {
+  console.error("Error fetching user document:", error);
+})})}})}
+
 
                                             
                   // Category Pie Chart Section
