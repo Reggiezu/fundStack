@@ -1,0 +1,13 @@
+## Firebase Config (if contains secrets)
+firebase-config.js
+
+#logs 
+firebase-debug.log
+.firebase
+
+#Temporary Files
+temp.html
+
+# System files
+.DS_Store
+Thumbs.db
