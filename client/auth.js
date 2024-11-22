@@ -4,6 +4,44 @@ const currentPage = window.location.pathname.split("/").pop();
 // List of restricted pages (should only be accessible if the profile is complete)
 const restrictedPages = ["profile.html", "dashboard.html"];
 
+// Ensure these are at the top level of the auth.js file, not nested inside any function
+
+function signIn(email, password) {
+  firebase.auth().signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      console.log(`Signed in successfully: ${user.email}`);
+      // Add any additional actions like redirecting
+    })
+    .catch((error) => {
+      console.error(`Error during sign-in: ${error.message}`);
+    });
+}
+
+function signUp(email, password) {
+  firebase.auth().createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      console.log(`Sign up successful: ${user.email}`);
+      // Add any additional actions like redirecting
+    })
+    .catch((error) => {
+      console.error(`Error during sign-up: ${error.message}`);
+    });
+}
+
+function signOut() {
+  firebase.auth().signOut()
+    .then(() => {
+      console.log("Sign-out successful");
+    })
+    .catch((error) => {
+      console.error("Error during sign-out:", error);
+    });
+}
+
+
+
 // Initialize Firebase Auth and check access immediately on page load
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
