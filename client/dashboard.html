@@ -59,7 +59,6 @@
             </div>
           </div>
         </div>
-
         <!-- Info Cards -->
         <div class="col-lg-3 mb-4">
           <div class="card shadow-sm mb-3">
@@ -154,15 +153,15 @@
               <ul class="list-group">
                 <li class="list-group-item">
                   <input class="form-check-input me-1" type="checkbox" value="" />
-                  Complete category report
+                  Buy a new car
                 </li>
                 <li class="list-group-item">
                   <input class="form-check-input me-1" type="checkbox" value="" />
-                  Review transaction history
+                  Travel to Cancun
                 </li>
                 <li class="list-group-item">
                   <input class="form-check-input me-1" type="checkbox" value="" />
-                  Update savings plan
+                  Pay off car note
                 </li>
               </ul>
             </div>
@@ -172,14 +171,37 @@
         <!-- Calendar Card -->
         <div class="col-lg-6 mb-4">
           <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">Calendar</h5>
-              <div id="calendar"></div>
+            <div class="card-header">
+              <ul class="nav nav-tabs card-header-tabs" id="accountCategoryTab" role="tablist">
+                <li class="nav-item">
+                  <a class="nav-link active" id="accounts-tab" data-bs-toggle="tab" href="#accounts" role="tab" aria-controls="accounts" aria-selected="true">Accounts</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" id="categories-tab" data-bs-toggle="tab" href="#categories" role="tab" aria-controls="categories" aria-selected="false">Categories</a>
+                </li>
+              </ul>
             </div>
-          </div>
+            <div class="card-body tab-content" id="accountCategoryContent">
+              <!-- Accounts Tab Content -->
+              <div class="tab-pane fade show active" id="accounts" role="tabpanel" aria-labelledby="accounts-tab">
+                <ul id="accountList" class="list-group">
+                  <!-- Placeholder content if no data -->
+                  <li id="noAccountsMessage" class="list-group-item text-muted">No accounts available.</li>
+                  <!-- Account items will be dynamically populated here -->
+                </ul>
+              </div>
+              <!-- Categories Tab Content -->
+              <div class="tab-pane fade" id="categories" role="tabpanel" aria-labelledby="categories-tab">
+                <ul id="categoryList" class="list-group">
+                  <!-- Placeholder content if no data -->
+                  <li id="noCategoriesMessage" class="list-group-item text-muted">No categories available.</li>
+                  <!-- Category items will be dynamically populated here -->
+                </ul>
+              </div>
+            </div>
+          </div>          
         </div>
-      </div>
-    </div>
+          
 
     <!-- Modals -->
      <!-- Balance Modal -->
@@ -511,8 +533,61 @@
                       toastElement.remove();
                   });
               }
+              db.collection("users").doc(userId).get().then((userDoc) => {
+if (userDoc.exists) {
+const userData = userDoc.data();
+const accountList = document.getElementById("accountList");
+const categoryList = document.getElementById("categoryList");
+// Placeholder elements
+const noAccountsMessage = document.getElementById("noAccountsMessage");
+const noCategoriesMessage = document.getElementById("noCategoriesMessage");
 
+// Clear previous lists
+accountList.innerHTML = "";
+categoryList.innerHTML = "";
 
+// Populate accounts
+if (userData.accounts && Object.keys(userData.accounts).length > 0) {
+  noAccountsMessage.style.display = "none"; // Hide placeholder if data exists
+  Object.entries(userData.accounts).forEach(([key, value]) => {
+    const accountItem = document.createElement("li");
+    accountItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+    accountItem.innerHTML = `
+      <span>${value.name}: $${value.balance} (${value.type})</span>
+      <div>
+        <button class="btn btn-info btn-sm mr-2" aria-label="Info" data-account-id="${key}"><i class="fas fa-info-circle"></i></button>
+        <button class="btn btn-primary btn-sm mr-2" aria-label="Edit" data-account-id="${key}"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm" aria-label="Delete" data-account-id="${key}"><i class="fas fa-trash"></i></button>
+      </div>
+    `;
+    accountList.appendChild(accountItem);
+  });
+} else {
+  noAccountsMessage.style.display = "block"; // Show placeholder if no data
+}
+
+// Populate categories
+if (userData.assignedCategories && Object.keys(userData.assignedCategories).length > 0) {
+  noCategoriesMessage.style.display = "none"; // Hide placeholder if data exists
+  Object.entries(userData.assignedCategories).forEach(([key, value]) => {
+    const categoryItem = document.createElement("li");
+    categoryItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+    categoryItem.innerHTML = `
+      <span>${key}: Assigned Budget $${value.assignedBudget}, Total Expenses $${value.totalExpense}</span>
+      <div>
+        <button class="btn btn-info btn-sm mr-2" aria-label="Info" data-category-id="${key}"><i class="fas fa-info-circle"></i></button>
+        <button class="btn btn-primary btn-sm mr-2" aria-label="Edit" data-category-id="${key}"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-danger btn-sm" aria-label="Delete" data-category-id="${key}"><i class="fas fa-trash"></i></button>
+      </div>
+    `;
+    categoryList.appendChild(categoryItem);
+  });
+} else {
+  noCategoriesMessage.style.display = "block"; // Show placeholder if no data
+}}
+}).catch((error) => {
+console.error("Error fetching user document for dropdowns:", error);
+});
 
                   // Fetch User Info and Update Balance
                     async function fetchFirestoreData(userId) {
