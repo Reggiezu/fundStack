@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Registration page for FundStack" />
+    <meta name="author" content="FundStack Team" />
+    <title>Profile - FundStack</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+    <!-- Font Awesome icons (free version) -->
+    <script
+      src="https://use.fontawesome.com/releases/v6.3.0/js/all.js"
+      crossorigin="anonymous"
+    ></script>
+    <!-- Google fonts -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Catamaran:100,200,300,400,500,600,700,800,900"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Lato:100,100i,300,300i,400,400i,700,700i,900,900i"
+      rel="stylesheet"
+    />
+
+    <!-- Core theme CSS (includes Bootstrap) -->
+    <link href="styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <div id="navbar"></div>
+    
+ <!-- Profile Section -->
+ <section class="bg-light py-5 mt-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        <img src="https://via.placeholder.com/150" alt="Profile Picture" class="rounded-circle mb-3">
+                        <h3 class="card-title mb-3">John Doe</h3>
+                        <p class="text-muted mb-3">john.doe@example.com</p>
+
+                        <div class="row mt-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Account Balance</h5>
+                                        <p class="card-text">$1,500.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Savings</h5>
+                                        <p class="card-text">$3,000.00</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                            Edit Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="editName" value="John Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="editEmail" value="john.doe@example.com">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="main.js"></script>
+    
+    
+  </body>
+</html>

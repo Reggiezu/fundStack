@@ -1,0 +1,26 @@
+# .github/workflows/smoke-tests.yml
+name: Basic HTML Validation and Smoke Tests
+
+on: [push, pull_request]
+
+jobs:
+  validate-html:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install HTML Linter
+      run: npm install -g htmlhint
+    - name: Run HTML Linter
+      run: htmlhint "client/**/*.html"
+
+  run-basic-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+    - run: echo "Running basic smoke tests with test.js" # Replace with any simple JS testing script you have

@@ -1,0 +1,15 @@
+# .github/workflows/html-lint.yml
+name: HTML Lint
+
+on: [push, pull_request]
+
+jobs:
+  lint-html:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install HTML Linter
+      run: npm install -g htmlhint
+    - name: Run HTML Linter
+      run: htmlhint "client/**/*.html"
