@@ -5,6 +5,8 @@
 
 This project is currently deployed using Firebase Hosting. You can view the live site here:
 
+https://fundstack-91d4d.web.app/index.html
+
 [Live Demo](https://<your-firebase-project-id>.web.app)
 
 ### Deployment Steps
