@@ -104,20 +104,27 @@
     </section>
 
     <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+     <!-- Toast Utility -->
+<script src="assets/js/toast.js"></script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="firebase-config.js"></script>
     <script src="auth.js"></script>
     <script src="main.js"></script>
+   
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         // Firebase Authentication listener to check the user state
         firebase.auth().onAuthStateChanged((user) => {
           if (user) {
             // User is logged in, now proceed with the profile completion
-            alert("Please complete your account information.");
-
+            toast({
+                title: "Error",
+                description: "Please complete your account information.",
+              });
             // Reference to the form on the profile-completion page
             const profileForm = document.getElementById(
               "profileCompletionForm"
@@ -146,10 +153,13 @@
                       accounts: {}, // No linked accounts yet
                     })
                     .then(() => {
-                      alert(
-                        "Profile completed successfully! Redirecting to the dashboard..."
-                      );
-                      window.location.href = "dashboard.html"; // Redirect after profile completion
+                      toast({
+                        title: "Profile Updated",
+                        description: "Profile completed successfully! Redirecting to the dashboard...",
+                      });
+                      setTimeout(() => {
+                        window.location.href = "dashboard.html";
+                      }, 2500); // 2.5 seconds
                     })
                     .catch((error) => {
                       console.error("Error updating profile: ", error);
