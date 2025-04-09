@@ -53,42 +53,98 @@ firebase.auth().onAuthStateChanged((user) => {
       if (docSnapshot.exists) {
         const userData = docSnapshot.data();
 
-        // If the profile is incomplete, redirect them only if they're not on profile-completion.html
-        if (!userData.username && currentPage !== "profile-completion.html") {
-          alert("Please complete your profile.");
-          window.location.href = "profile-completion.html";
+         // If the profile is incomplete, redirect them
+         if (!userData.username && currentPage !== "profile-completion.html") {
+          toast({
+            title: "Complete Your Profile",
+            description: "Please complete your profile.",
+            type: "warning",
+          });
+          setTimeout(() => {
+            window.location.href = "profile-completion.html";
+          }, 2500);
         } else if (restrictedPages.includes(currentPage) && !userData.username) {
-          // Prevent restricted page access if profile is not complete
-          alert("You need to complete your profile before accessing this page.");
-          window.location.href = "profile-completion.html";
+          toast({
+            title: "Access Denied",
+            description: "You need to complete your profile before accessing this page.",
+            type: "error",
+          });
+          setTimeout(() => {
+            window.location.href = "profile-completion.html";
+          }, 2500);
         }
       } else {
-        // If user data doesn't exist, create a placeholder without a username
+        // No user doc yet, create one
         userRef.set({
           name: user.displayName || "No Name Provided",
           email: user.email,
-          username: "", // Placeholder until provided by user
+          username: "", // Placeholder until completed
         }).then(() => {
           if (currentPage !== "profile-completion.html") {
-            alert("Please complete your profile.");
-            window.location.href = "profile-completion.html";
+            toast({
+              title: "Welcome!",
+              description: "Please complete your profile.",
+              type: "info",
+            });
+            setTimeout(() => {
+              window.location.href = "profile-completion.html";
+            }, 2500);
           }
         }).catch((error) => {
-          console.error("Error adding basic user details to Firestore: ", error);
+          console.error("Error creating user doc:", error);
         });
       }
     });
   } else {
-    // If not authenticated, restrict access to specific pages
+    // Not signed in
     if (restrictedPages.includes(currentPage)) {
-      alert("You need to log in to access this page.");
-      window.location.href = "signin.html";
+      toast({
+        title: "Login Required",
+        description: "You need to log in to access this page.",
+        type: "warning",
+      });
+      setTimeout(() => {
+        window.location.href = "signin.html";
+      }, 2500);
     }
   }
 });
 
 // Document Ready Actions
 document.addEventListener("DOMContentLoaded", () => {
+  const observer = new MutationObserver(() => {
+    const signOutBtn = document.getElementById("signOutBtn");
+    if (signOutBtn) {
+      console.log("SignOut Button now exists. Adding event listener.");
+      signOutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        firebase.auth().signOut()
+          .then(() => {
+            toast({
+              title: "Signed Out",
+              description: "Redirecting to homepage...",
+              type: "success",
+            });
+            setTimeout(() => {
+              window.location.href = "index.html";
+            }, 2000);
+          })
+          .catch((error) => {
+            console.error("Sign-out error:", error);
+            toast({
+              title: "Sign Out Failed",
+              description: error.message,
+              type: "error",
+            });
+          });
+      });
+  
+      // Stop observing after we've added it
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+
   // Reference to the Google Sign-In Button
   const googleBtn = document.getElementById("googleSignInBtn");
   if (googleBtn) {
@@ -110,17 +166,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 email: user.email,
                 username: "", // Placeholder until provided by user
               }).then(() => {
-                alert("Please complete your profile.");
-                window.location.href = "profile-completion.html";
+                toast({
+                  title: "Almost There!",
+                  description: "Please complete your profile.",
+                  type: "info",
+                });
+                setTimeout(() => {
+                  window.location.href = "profile-completion.html";
+                }, 2500);
               });
-            } else {
-              alert("Sign-in successful! Redirecting to dashboard...");
-              window.location.href = "dashboard.html";
+            }else {
+              toast({
+                title: "Welcome Back!",
+                description: "Sign-in successful! Redirecting to dashboard...",
+                type: "success",
+              });
+              setTimeout(() => {
+                window.location.href = "dashboard.html";
+              }, 2000);
             }
-          });
+          })
         })
         .catch((error) => {
           const errorMessage = error.message;
+          toast({
+            title: "Sign-In Error",
+            description: errorMessage,
+            type: "error",
+          });
           document.getElementById("signInError").innerText = `Error: ${errorMessage}`;
         });
     });
@@ -148,14 +221,23 @@ if (signUpForm) {
         return user.updateProfile({
           displayName: `${firstName} ${lastName}`
         }).then(() => {
-          // Redirect to profile completion page
-          alert("User registration successful. Redirecting to profile completion...");
-          window.location.href = "profile-completion.html";
+          toast({
+            title: "Registration Successful!",
+            description: "Redirecting to profile completion...",
+            type: "success",
+          });
+          setTimeout(() => {
+            window.location.href = "profile-completion.html";
+          }, 2500);
         });
       })
       .catch((error) => {
-        // Handle errors during user creation or profile update process
         const errorMessage = error.message;
+        toast({
+          title: "Registration Error",
+          description: errorMessage,
+          type: "error",
+        });
         document.getElementById("signInError").innerText = `Error: ${errorMessage}`;
       });
   });
@@ -210,6 +292,11 @@ if (signUpForm) {
             if (!querySnapshot.empty) {
               // Username already exists
               document.getElementById("signInError").innerText = `Error: Username "${username}" is already taken.`;
+              toast({
+                title: "Username Taken",
+                description: `The username "${username}" is already in use.`,
+                type: "warning",
+              });
               return Promise.reject("Username already exists");
             }
 
@@ -226,32 +313,28 @@ if (signUpForm) {
             });
           })
           .then(() => {
-            alert("Profile updated successfully!");
-            window.location.href = "dashboard.html";
+            toast({
+              title: "Profile Saved!",
+              description: "Profile updated successfully. Redirecting to dashboard...",
+              type: "success",
+            });
+        
+            setTimeout(() => {
+              window.location.href = "dashboard.html";
+            }, 2000);
           })
           .catch((error) => {
             if (error !== "Username already exists") {
               console.error("Error updating profile: ", error);
+              toast({
+                title: "Update Error",
+                description: error.message || "Something went wrong while updating your profile.",
+                type: "error",
+              });
               document.getElementById("signInError").innerText = `Error: ${error.message}`;
             }
           });
       }
     });
   }
-
-  // Sign-Out Button Logic
-  const signOutBtn = document.getElementById('signOutBtn');
-  if (signOutBtn) {
-    signOutBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      firebase.auth().signOut()
-        .then(() => {
-          alert("Sign-out successful!");
-          window.location.href = "index.html";
-        })
-        .catch((error) => {
-          console.error("Error signing out:", error);
-        });
-    });
-  }
-});
+})

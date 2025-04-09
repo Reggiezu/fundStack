@@ -33,25 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
           signUpButton.style.display = "block";
           profileBtn.style.display = "none";
           dashboardBtn.style.display = "none";
-        }
-
-        // Sign-Out Button Logic (after navbar is loaded)
-        const signOutBtn = document.getElementById("signOutBtn");
-        if (signOutBtn) {
-          signOutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            firebase
-              .auth()
-              .signOut()
-              .then(() => {
-                alert("Sign-out successful!");
-                window.location.href = "index.html"; // Redirect to login or home page
-              })
-              .catch((error) => {
-                console.error("Error signing out:", error);
-              });
-          });
-        }
+        }   
       });
     })
     .catch((error) => {
